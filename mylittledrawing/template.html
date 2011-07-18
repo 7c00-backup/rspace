@@ -3,6 +3,7 @@
 	<head>
 		<title>My Little Drawing</title>
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+		<script src="/_ah/channel/jsapi"></script>
 	</head>
 	<body>
 		<h3>{{html .Title}}</h3>
@@ -34,8 +35,9 @@ alt="Powered by Go on Google App Engine" />
 
 {{define "conversation"}}
 	{{template "header" .}}
-	<div id="list">
 	{{with .Data}}
+	{{with .Conv}}
+	<div id="list">
 	{{template "list" .}}
 	</div>
 {{/*
@@ -56,7 +58,9 @@ alt="Powered by Go on Google App Engine" />
 		<input type="submit" value="Upload">
 		<input type="hidden" name="key" value="{{html .Key}}" />
 	</form>
-	<script>
+	{{end}}{{/* with .Conv*/}}
+		<script>
+		var token="{{js .Token}}";
 		$(function() {
 			var $form = $("#newElem");
 			var submit = function(){
@@ -82,7 +86,24 @@ alt="Powered by Go on Google App Engine" />
 					submit();
 					e.preventDefault();
 				}
-			})
+			});
+			var chan = new goog.appengine.Channel(token);
+			var sock = chan.open();
+			sock.onmessage = function(msg) {
+				$.ajax("/conv", {
+					data: {
+						key: $form.find("[name=key]").val(),
+						listOnly: true
+					},
+					dataType: "html",
+					success: function(html){
+						$("#list").html(html);
+					},
+					error: function(){
+						alert("update failed");
+					}
+				});
+			};
 		});
 	</script>
 	{{end}}

@@ -7,6 +7,7 @@ package mylittledrawing
 
 import (
 	"appengine"
+	"appengine/channel"
 	"appengine/datastore"
 	"appengine/user"
 	"bytes"
@@ -72,6 +73,11 @@ type Conversation struct {
 	Elem []*Elem // always empty in the data store. TODO: don't use this type
 }
 
+type ConversationView struct {
+	Conv *Conversation
+	Token string // identifies the channel
+}
+
 type Elem struct {
 	Text string
 	ImageKey string
@@ -118,6 +124,21 @@ type Executor struct {
 	Data interface{}
 }
 
+// Viewers holds the channel client ids for the viewers of a conversation.
+// Stored in the datastore under the key of the conversation.
+type Viewers struct {
+	Client []string
+}
+
+func (v *Viewers) Notify(c appengine.Context) {
+	for _, client := range v.Client {
+		err := channel.Send(c, client, "update") // value unimportant; just a signal
+		if err != nil {
+			c.Infof("channel send: %s", err)
+		}
+	}
+}
+
 func execute(w http.ResponseWriter, name, title string, data interface{}) {
 	var b bytes.Buffer
 	err := set.Execute(&b, name, &Executor{title, data})
@@ -143,14 +164,45 @@ func root(w http.ResponseWriter, r *http.Request) {
 	execute(w, "root", "Home", convs)
 }
 
+// Render the list without the surrounding boilerplate.
+func renderList(w io.Writer, conv *Conversation) {
+	var b bytes.Buffer
+	check(set.Execute(&b, "list", conv))
+	b.WriteTo(w)
+}
+
 // conversation is the HTTP handler to present and edit a conversation.
 func conversation(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
-	getUser(c)
+	user := getUser(c)
 	keyString := r.FormValue("key")
+	listOnly := r.FormValue("listOnly") == "true"
 	key := datastore.NewKey("Conversation", keyString, 0, nil)
 	conv := getConv(c, key)
-	execute(w, "conversation", conv.Title, conv)
+	if listOnly {
+		renderList(w, conv)
+		return
+	}
+	// Channel nonsense
+	clientID := key.StringID()+"-"+user // TODO: probably want a better name
+	token, err := channel.Create(c, clientID)
+	check(err)
+	updateViewers := func(c appengine.Context) os.Error {
+		viewersKey := datastore.NewKey("Viewers", "viewers-"+key.StringID(), 0, key)
+		var v Viewers
+		err := datastore.Get(c, viewersKey, &v)
+		if err != nil && err != datastore.ErrNoSuchEntity {
+			return err
+		}
+		v.Client= append(v.Client, clientID)
+		_, err = datastore.Put(c, viewersKey, &v)
+		return err
+	}
+	err = datastore.RunInTransaction(c, updateViewers)
+	check(err)
+	// end of channel nonsense
+	cview := &ConversationView{conv, token}
+	execute(w, "conversation", conv.Title, cview)
 }
 
 // getConv returns the conversation with the given key.
@@ -207,10 +259,7 @@ func newElem(w http.ResponseWriter, r *http.Request) {
 	convKey := addElem(w, r, r.FormValue("text"), "")
 	// Reload the conversation from the data store.
 	conv := getConv(c, convKey)
-	// Render the list without the surrounding boilerplate.
-	var b bytes.Buffer
-	check(set.Execute(&b, "list", conv))
-	b.WriteTo(w)
+	renderList(w, conv)
 }
 
 func addElem(w http.ResponseWriter, r *http.Request, text string, imageKey string) (convKey *datastore.Key){
@@ -240,11 +289,18 @@ func addElem(w http.ResponseWriter, r *http.Request, text string, imageKey strin
 	_, err = datastore.Put(c, elemKey, elem)
 	check(err)
 
-	// Update the conversation
+	// Update the conversation.
 	conv.ModTime = modTime
 	conv.ModUser = user
 	_, err = datastore.Put(c, convKey, conv)
 	check(err)
+
+	// Send updates to all viewers.
+	viewersKey := datastore.NewKey("Viewers", "viewers-"+convKey.StringID(), 0, convKey)
+	v := new(Viewers)
+	err = datastore.Get(c, viewersKey, v)
+	check(err)
+	v.Notify(c)
 	return
 }
 
