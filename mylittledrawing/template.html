@@ -1,4 +1,4 @@
-{{define "main"}}
+{{define "header"}}
 	<html>
 	<head>
 		<title>My Little Drawing</title>
@@ -6,9 +6,9 @@
 	</head>
 	<body>
 		<h3>{{html .Title}}</h3>
+{{end}}
 
-		{{template .Template .Data}}
-	
+{{define "footer"}}
 	<a href="http://blog.golang.org/2011/05/go-and-google-app-engine.html">
 		<img src="static/gopher.gif" alt="Powered by Go on Google App Engine"/><img src="http://code.google.com/appengine/images/appengine-noborder-120x30.gif" 
 alt="Powered by Go on Google App Engine" />
@@ -17,7 +17,8 @@ alt="Powered by Go on Google App Engine" />
 {{end}}
 
 {{define "root"}}
-	{{range .}}
+	{{template "header" .}}
+	{{range .Data}}
 		<a href="/conv?key={{html .Key}}">{{html .Title}}</a> {{html .ModUser }}{{time .ModTime}}
 		<br>
 	{{else}}
@@ -28,10 +29,13 @@ alt="Powered by Go on Google App Engine" />
 		Title: <input type="text" name="title" />
 		<input type="submit" value="Submit" />
 	</form>
+	{{template "footer" .}}
 {{end}}
 
 {{define "conversation"}}
+	{{template "header" .}}
 	<div id="list">
+	{{with .Data}}
 	{{template "list" .}}
 	</div>
 {{/*
@@ -81,6 +85,8 @@ alt="Powered by Go on Google App Engine" />
 			})
 		});
 	</script>
+	{{end}}
+	{{template "footer" .}}
 {{end}}
 
 {{define "list"}}
@@ -93,5 +99,7 @@ alt="Powered by Go on Google App Engine" />
 {{end}}
 
 {{define "error"}}
-	<h2>{{.}}</h2>
+	{{template "header" .}}
+	<h2>{{.Data}}</h2>
+	{{template "footer" .}}
 {{end}}

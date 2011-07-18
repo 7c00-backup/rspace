@@ -38,7 +38,7 @@ func initTemplateSet() *template.Set {
 	if err != nil {
 		panic("can't read templates: " + err.String())
 	}
-	set := template.NewSet().Funcs(formatters)
+	set := new(template.Set).Funcs(formatters)
 	err = set.Parse(string(bytes))
 	if err != nil {
 		panic("can't parse templates: " + err.String())
@@ -114,14 +114,13 @@ func getUser(c appengine.Context) string {
 }
 
 type Executor struct {
-	Template string
 	Title string
 	Data interface{}
 }
 
 func execute(w http.ResponseWriter, name, title string, data interface{}) {
 	var b bytes.Buffer
-	err := set.Execute("main", &b, &Executor{name, title, data})
+	err := set.Execute(&b, name, &Executor{title, data})
 	check(err)
 	b.WriteTo(w)
 }
@@ -244,7 +243,7 @@ func addElem(w http.ResponseWriter, r *http.Request, text string, imageKey strin
 	conv = getConv(c, convKey)
 	// Render the list without the surrounding boilerplate.
 	var b bytes.Buffer
-	err = set.Execute("list", &b, conv)
+	err = set.Execute(&b, "list", conv)
 	check(err)
 	b.WriteTo(w)
 }
