@@ -1,0 +1,97 @@
+{{define "main"}}
+	<html>
+	<head>
+		<title>My Little Drawing</title>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+	</head>
+	<body>
+		<h3>{{html .Title}}</h3>
+
+		{{template .Template .Data}}
+	
+	<a href="http://blog.golang.org/2011/05/go-and-google-app-engine.html">
+		<img src="static/gopher.gif" alt="Powered by Go on Google App Engine"/><img src="http://code.google.com/appengine/images/appengine-noborder-120x30.gif" 
+alt="Powered by Go on Google App Engine" />
+	</a>
+	<a href="/">Home</a>
+{{end}}
+
+{{define "root"}}
+	{{range .}}
+		<a href="/conv?key={{html .Key}}">{{html .Title}}</a> {{html .ModUser }}{{time .ModTime}}
+		<br>
+	{{else}}
+		There are no conversations to view.
+	{{end}}
+	<h3>Create a new conversation:<h3>
+	<form name="conv" action="newconv" method="get">
+		Title: <input type="text" name="title" />
+		<input type="submit" value="Submit" />
+	</form>
+{{end}}
+
+{{define "conversation"}}
+	<div id="list">
+	{{template "list" .}}
+	</div>
+{{/*
+	<form name="elem" action="newElem" method="get">
+		<textarea rows="5" cols="80" wrap="physical" name="text"></textarea>
+		<input type="submit" value="Submit" />
+		<input type="hidden" name="key" value="{{html .Key}}" />
+	</form>
+*/}}
+	<form id="newElem">
+		<textarea rows="5" cols="80" wrap="physical" name="text"></textarea>
+		<input type="button" value="Submit" />
+		<input type="hidden" name="key" value="{{html .Key}}" />
+	</form>
+	<br>
+	<form action="upload" method="POST" enctype="multipart/form-data">
+		<input type="file" name="image">
+		<input type="submit" value="Upload">
+		<input type="hidden" name="key" value="{{html .Key}}" />
+	</form>
+	<script>
+		$(function() {
+			var $form = $("#newElem");
+			var submit = function(){
+				$.ajax("/newElem", {
+					data: {
+						key: $form.find("[name=key]").val(),
+						text: $form.find("textarea").val()
+					},
+					dataType: "html",
+					success: function(html){
+						$("#list").html(html);
+					},
+					error: function(){
+						alert("post failed; try again");
+					}
+				});
+				$form.find("textarea").val("");
+			};
+			$form.find("[type=button]").click(submit);
+			// on carriage return, submit blip.
+			$form.find("textarea").keydown(function(e){
+				if (e.which == 13) {
+					submit();
+					e.preventDefault();
+				}
+			})
+		});
+	</script>
+{{end}}
+
+{{define "list"}}
+	{{range .Elem}}
+		{{.Display}}
+		<br>
+		&nbsp;&nbsp;&nbsp;&nbsp;[{{html .User}}{{time .Time}}]
+		<br>
+	{{end}}
+{{end}}
+
+{{define "error"}}
+	<h2>{{.}}</h2>
+{{end}}

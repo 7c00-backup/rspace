@@ -1,0 +1,25 @@
+<html>
+<head>
+	<title>My Little Drawing</title>
+</head>
+<body>
+	<h3>Conversations:</h3>
+	{.repeated section @}
+		<a href="/conv?key={Key|html}">{Title|html}</a> {ModUser|html}{ModTime|time}
+		<br>
+	{.or}
+		There are no conversations to view.
+	{.end}
+	<h3>Create a new conversation:<h3>
+	<form name="conv" action="newconv" method="get">
+		Title: <input type="text" name="title" />
+		<input type="submit" value="Submit" />
+	</form>
+
+	<a href="http://blog.golang.org/2011/05/go-and-google-app-engine.html">
+		<img src="static/gopher.gif" alt="Powered by Go on Google App Engine"/><img src="http://code.google.com/appengine/images/appengine-noborder-120x30.gif" 
+alt="Powered by Go on Google App Engine" />
+	</a>
+
+</body>
+</html>
