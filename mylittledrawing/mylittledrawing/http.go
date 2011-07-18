@@ -201,12 +201,19 @@ func newConversation(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/conv?key="+keyString, 302)
 }
 
-// newElem is the HTTP handler to add an element to a conversation
+// newElem is the HTTP handler to add an element to a conversation and redraw the page.
 func newElem(w http.ResponseWriter, r *http.Request) {
-	addElem(w, r, r.FormValue("text"), "")
+	c := appengine.NewContext(r)
+	convKey := addElem(w, r, r.FormValue("text"), "")
+	// Reload the conversation from the data store.
+	conv := getConv(c, convKey)
+	// Render the list without the surrounding boilerplate.
+	var b bytes.Buffer
+	check(set.Execute(&b, "list", conv))
+	b.WriteTo(w)
 }
 
-func addElem(w http.ResponseWriter, r *http.Request, text string, imageKey string) {
+func addElem(w http.ResponseWriter, r *http.Request, text string, imageKey string) (convKey *datastore.Key){
 	c := appengine.NewContext(r)
 	user := getUser(c)
 	keyString := r.FormValue("key")
@@ -214,7 +221,7 @@ func addElem(w http.ResponseWriter, r *http.Request, text string, imageKey strin
 		check(fmt.Errorf("nothing in conversation: TODO"))
 	}
 	// Grab the conversation
-	convKey := datastore.NewKey("Conversation", keyString, 0, nil)
+	convKey = datastore.NewKey("Conversation", keyString, 0, nil)
 	conv := new(Conversation)
 	err := datastore.Get(c, convKey, conv)
 	check(err)
@@ -238,14 +245,7 @@ func addElem(w http.ResponseWriter, r *http.Request, text string, imageKey strin
 	conv.ModUser = user
 	_, err = datastore.Put(c, convKey, conv)
 	check(err)
-
-	// Reload the conversation from the data store.
-	conv = getConv(c, convKey)
-	// Render the list without the surrounding boilerplate.
-	var b bytes.Buffer
-	err = set.Execute(&b, "list", conv)
-	check(err)
-	b.WriteTo(w)
+	return
 }
 
 // Image is the type used to hold the image in the datastore.
@@ -302,7 +302,6 @@ func upload(w http.ResponseWriter, r *http.Request) {
 	buf.Reset()
 	err = jpeg.Encode(&buf, i, nil)
 	check(err)
-println("ENCODED")
 
 	// Create an App Engine context for the client's request.
 	c := appengine.NewContext(r)
@@ -312,9 +311,11 @@ println("ENCODED")
 	key := datastore.NewKey("Image", keyString, 0, nil)
 	_, err = datastore.Put(c, key, &Image{buf.Bytes()})
 	check(err)
-println("WRITTEN")
 
-	addElem(w, r, "", keyString)
+	convKey := addElem(w, r, "", keyString)
+
+	// Redirect to show conversation.
+	http.Redirect(w, r, "/conv?key="+convKey.StringID(), 302)
 }
 
 // keyOf returns (part of) the SHA-1 hash of the data, as a hex string.
