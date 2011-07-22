@@ -61,6 +61,9 @@ func init() {
 	http.HandleFunc("/conv", errorHandler(conversation))
 	http.HandleFunc("/img", errorHandler(img))
 	http.HandleFunc("/upload", errorHandler(upload))
+	// for Channel management
+//	http.HandleFunc("/_ah/channel/connected/", errorHandler(nil))
+	http.HandleFunc("/_ah/channel/disconnected/", errorHandler(viewerDisconnect))
 }
 
 // Conversation is the type used to hold the conversations in the datastore.
@@ -139,6 +142,47 @@ func (v *Viewers) Notify(c appengine.Context) {
 	}
 }
 
+func updateViewers(c appengine.Context, convKeyStringID string, f func(*Viewers)) os.Error {
+	convKey := datastore.NewKey("Conversation", convKeyStringID, 0, nil)
+	viewersKey := datastore.NewKey("Viewers", "viewers-"+convKeyStringID, 0, convKey)
+	var v Viewers
+	err := datastore.Get(c, viewersKey, &v)
+	if err != nil && err != datastore.ErrNoSuchEntity {
+		return err
+	}
+	f(&v)
+	if len(v.Client) == 0 {
+		// delete viewer
+		err = datastore.Delete(c, viewersKey)
+	} else {
+		_, err = datastore.Put(c, viewersKey, &v)
+	}
+	return err
+}
+
+func viewerDisconnect(w http.ResponseWriter, r *http.Request) {
+	c := appengine.NewContext(r)
+	clientID := r.FormValue("from")
+	keyStringID := strings.Split(clientID, "/", -1)[0]
+c.Infof("disconnnect from %q key %q", clientID, keyStringID)
+	delViewer := func(c appengine.Context) os.Error {
+		return updateViewers(c, keyStringID, func(v *Viewers){
+			var nClient []string
+			for _, id := range v.Client {
+				if id != clientID {
+					nClient = append(nClient, id)
+				}
+			}
+			v.Client= nClient
+		})
+	}
+	err := datastore.RunInTransaction(c, delViewer)
+	if err != nil {
+		c.Errorf("error in viewerDisconnect: %v", err)
+		return
+	}
+}
+
 func execute(w http.ResponseWriter, name, title string, data interface{}) {
 	var b bytes.Buffer
 	err := set.Execute(&b, name, &Executor{title, data})
@@ -151,8 +195,8 @@ func root(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 	getUser(c)
 	if r.URL.RawPath != "/" {
-		// TODO: 404
-		panic(fmt.Errorf("no such page: %s", r.URL.String()))
+		http.Error(w, "no such page: " + r.URL.Path, 404)
+		return
 	}
 	// Get the list of conversations
 	query := datastore.NewQuery("Conversation").
@@ -184,21 +228,15 @@ func conversation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Channel nonsense
-	clientID := key.StringID()+"-"+user // TODO: probably want a better name
+	clientID := key.StringID()+"/"+user // TODO: probably want a better name
 	token, err := channel.Create(c, clientID)
 	check(err)
-	updateViewers := func(c appengine.Context) os.Error {
-		viewersKey := datastore.NewKey("Viewers", "viewers-"+key.StringID(), 0, key)
-		var v Viewers
-		err := datastore.Get(c, viewersKey, &v)
-		if err != nil && err != datastore.ErrNoSuchEntity {
-			return err
-		}
-		v.Client= append(v.Client, clientID)
-		_, err = datastore.Put(c, viewersKey, &v)
-		return err
+	addViewer := func(c appengine.Context) os.Error {
+		return updateViewers(c, key.StringID(), func(v *Viewers){
+			v.Client= append(v.Client, clientID)
+		})
 	}
-	err = datastore.RunInTransaction(c, updateViewers)
+	err = datastore.RunInTransaction(c, addViewer)
 	check(err)
 	// end of channel nonsense
 	cview := &ConversationView{conv, token}
