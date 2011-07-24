@@ -1,7 +1,7 @@
 {{define "header"}}
 	<html>
 	<head>
-		<title>My Little Drawing</title>
+		<title>{{html .Title}}: My Little Drawing</title>
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
 		<script src="/_ah/channel/jsapi"></script>
 	</head>
@@ -36,87 +36,91 @@ alt="Powered by Go on Google App Engine" />
 {{define "conversation"}}
 	{{template "header" .}}
 	{{with .Data}}
-	{{with .Conv}}
-	<div id="list">
-	{{template "list" .}}
-	</div>
-{{/*
-	<form name="elem" action="newElem" method="get">
-		<textarea rows="5" cols="80" wrap="physical" name="text"></textarea>
-		<input type="submit" value="Submit" />
-		<input type="hidden" name="key" value="{{html .Key}}" />
-	</form>
-*/}}
-	<form id="newElem">
-		<textarea rows="5" cols="80" wrap="physical" name="text"></textarea>
-		<input type="button" value="Submit" />
-		<input type="hidden" name="key" value="{{html .Key}}" />
-	</form>
-	<br>
-	<form action="upload" method="POST" enctype="multipart/form-data">
-		<input type="file" name="image">
-		<input type="submit" value="Upload">
-		<input type="hidden" name="key" value="{{html .Key}}" />
-	</form>
-	{{end}}{{/* with .Conv*/}}
+		{{with .Conv}}
+			<div id="list">
+				{{template "list" .}}
+			</div>
+			<form id="newElem">
+				<textarea rows="5" cols="80" wrap="physical" name="text"></textarea>
+				<input type="button" value="Submit" />
+				<input type="hidden" name="key" value="{{html .Key}}" />
+			</form>
+			<br>
+			<form action="upload" method="POST" enctype="multipart/form-data">
+				<input type="file" name="image">
+				<input type="submit" value="Upload">
+				<input type="hidden" name="key" value="{{html .Key}}" />
+			</form>
+		{{end}}
 		<script>
-		var token="{{js .Token}}";
-		$(function() {
-			var $form = $("#newElem");
-			var submit = function(){
-				$.ajax("/newElem", {
-					data: {
-						key: $form.find("[name=key]").val(),
-						text: $form.find("textarea").val()
-					},
-					dataType: "html",
-					success: function(html){
-						$("#list").html(html);
-					},
-					error: function(){
-						alert("post failed; try again");
+			var token="{{js .Token}}";
+			$(function() {
+				var $form = $("#newElem");
+				var submit = function(){
+					$.ajax("/newElem", {
+						data: {
+							key: $form.find("[name=key]").val(),
+							text: $form.find("textarea").val()
+						},
+						dataType: "html",
+						success: function(html){
+							$("#list").html(html);
+						},
+						error: function(){
+							alert("post failed; try again");
+						}
+					});
+					$form.find("textarea").val("");
+				};
+				$form.find("[type=button]").click(submit);
+				// on carriage return, submit blip.
+				$form.find("textarea").keydown(function(e){
+					if (e.which == 13) {
+						submit();
+						e.preventDefault();
 					}
 				});
-				$form.find("textarea").val("");
-			};
-			$form.find("[type=button]").click(submit);
-			// on carriage return, submit blip.
-			$form.find("textarea").keydown(function(e){
-				if (e.which == 13) {
-					submit();
-					e.preventDefault();
-				}
+				var chan = new goog.appengine.Channel(token);
+				var sock = chan.open();
+				sock.onmessage = function(msg) {
+					$.ajax("/conv", {
+						data: {
+							key: $form.find("[name=key]").val(),
+							listOnly: true
+						},
+						dataType: "html",
+						success: function(html){
+							$("#list").html(html);
+						},
+						error: function(){
+							alert("update failed");
+						}
+					});
+				};
 			});
-			var chan = new goog.appengine.Channel(token);
-			var sock = chan.open();
-			sock.onmessage = function(msg) {
-				$.ajax("/conv", {
-					data: {
-						key: $form.find("[name=key]").val(),
-						listOnly: true
-					},
-					dataType: "html",
-					success: function(html){
-						$("#list").html(html);
-					},
-					error: function(){
-						alert("update failed");
-					}
-				});
-			};
-		});
-	</script>
+		</script>
 	{{end}}
 	{{template "footer" .}}
 {{end}}
 
 {{define "list"}}
+	<table border="0">
 	{{range .Elem}}
-		{{.Display}}
-		<br>
-		&nbsp;&nbsp;&nbsp;&nbsp;[{{html .User}}{{time .Time}}]
-		<br>
+		<tr>
+		<td align="left" width="300">
+			{{.Display}}
+		</td>
+		<td align="left" valign="bottom" width="100">
+			<font size="2" color="lightgrey">{{html .User}}{{time .Time}}</font>
+		</td>
+		</tr>
+		<tr>
+		<td colspan=2>
+			<hr>
+		</td>
+		</tr>
 	{{end}}
+	</table>
 {{end}}
 
 {{define "error"}}

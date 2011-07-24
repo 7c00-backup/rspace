@@ -1,1 +1,0 @@
-/Users/r/go/src/pkg/freetype-go.googlecode.com/

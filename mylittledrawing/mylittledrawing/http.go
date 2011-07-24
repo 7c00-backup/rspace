@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// On App Engine, the framework sets up main; we should be a different package.
 package mylittledrawing
 
 import (
@@ -27,7 +26,7 @@ import (
 	_ "image/png" // import so we can read PNG files.
 )
 
-var TESTING=true
+const TESTING = false
 
 var formatters = template.FuncMap{
 	"time": timeFormatter,
@@ -62,7 +61,7 @@ func init() {
 	http.HandleFunc("/img", errorHandler(img))
 	http.HandleFunc("/upload", errorHandler(upload))
 	// for Channel management
-//	http.HandleFunc("/_ah/channel/connected/", errorHandler(nil))
+	http.HandleFunc("/_ah/channel/connected/", errorHandler(viewerConnect))
 	http.HandleFunc("/_ah/channel/disconnected/", errorHandler(viewerDisconnect))
 }
 
@@ -160,6 +159,10 @@ func updateViewers(c appengine.Context, convKeyStringID string, f func(*Viewers)
 	return err
 }
 
+func viewerConnect(w http.ResponseWriter, r *http.Request) {
+	// nothing to do here?
+}
+
 func viewerDisconnect(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 	clientID := r.FormValue("from")
@@ -200,7 +203,7 @@ func root(w http.ResponseWriter, r *http.Request) {
 	}
 	// Get the list of conversations
 	query := datastore.NewQuery("Conversation").
-		Order("ModTime")
+		Order("-ModTime")
 	var convs []*Conversation
 	keys, err := query.GetAll(c, &convs)
 	check(err)
@@ -313,7 +316,7 @@ func addElem(w http.ResponseWriter, r *http.Request, text string, imageKey strin
 	err := datastore.Get(c, convKey, conv)
 	check(err)
 	// Now store the element.
-	elemKeyString := keyOf(text+imageKey) // TODO: THIS IS NOT RIGHT!! needs to be unique (include time?)
+	elemKeyString := keyOf(text+imageKey+fmt.Sprint(time.Nanoseconds()))
 	// use convKey as the parent key to be available as the ancestor data for the query
 	elemKey := datastore.NewKey("Elem", elemKeyString, 0, convKey)
 	modTime := datastore.SecondsToTime(time.Seconds())
@@ -439,12 +442,12 @@ func timeFormatter(dt datastore.Time) string {
 	now := time.Seconds()
 	then := int64(dt)/1e6 // datastore times are in microseconds
 	t := time.SecondsToLocalTime(then)
-	format := "Jan 06 3:04PM MST"
+	format := "Jan 06 3:04PM"
 	switch {
 	case now - then < 12*3600:
-		format = "3:04PM MST"
+		format = "3:04PM"
 	case now - then < 7*24*3600:
-		format = "Mon 3:04PM MST"
+		format = "Mon 3:04PM"
 	}
 	return fmt.Sprintf("@%s", t.Format(format))
 }
