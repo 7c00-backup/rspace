@@ -88,6 +88,7 @@ type Elem struct {
 	User string
 }
 
+// Display is called from the template to generate the HTML representing an Elem. 
 func (e *Elem) Display() string {
 	var b bytes.Buffer
 	template.HTMLEscape(&b, []byte(e.Text))
@@ -303,15 +304,18 @@ func newElem(w http.ResponseWriter, r *http.Request) {
 	renderList(w, conv)
 }
 
+func getConvKey(r *http.Request) *datastore.Key {
+	return datastore.NewKey("Conversation", r.FormValue("key"), 0, nil)
+}
+
 func addElem(w http.ResponseWriter, r *http.Request, text string, imageKey string) (convKey *datastore.Key){
-	c := appengine.NewContext(r)
-	user := getUser(c)
-	keyString := r.FormValue("key")
 	if text == "" && imageKey == "" {
 		check(fmt.Errorf("nothing in conversation: TODO"))
 	}
+	c := appengine.NewContext(r)
+	user := getUser(c)
 	// Grab the conversation
-	convKey = datastore.NewKey("Conversation", keyString, 0, nil)
+	convKey = getConvKey(r)
 	conv := new(Conversation)
 	err := datastore.Get(c, convKey, conv)
 	check(err)
@@ -323,7 +327,7 @@ func addElem(w http.ResponseWriter, r *http.Request, text string, imageKey strin
 	elem := &Elem{
 		Text: text,
 		ImageKey: imageKey,
-		ConvKey: keyString,
+		ConvKey: convKey.StringID(),
 		Time: modTime,
 		User: user,
 	}
@@ -369,8 +373,8 @@ func upload(w http.ResponseWriter, r *http.Request) {
 	i, _, err := image.Decode(&buf)
 	check(err)
 
-	// Resize if too large, for more efficient moustachioing.
-	// We aim for less than 1200 pixels in any dimension; if the
+	// Resize if too large..
+	// We aim for fewer than 1200 pixels in any dimension; if the
 	// picture is larger than that, we squeeze it down to 600.
 	const max = 1200
 	if b := i.Bounds(); b.Dx() > max || b.Dy() > max {
@@ -405,7 +409,7 @@ func upload(w http.ResponseWriter, r *http.Request) {
 
 	// Save the image under a unique key, a hash of the image.
 	keyString := keyOf(buf.String())
-	key := datastore.NewKey("Image", keyString, 0, nil)
+	key := datastore.NewKey("Image", keyString, 0, nil) // TODO: should nil be getConvKey(r)?
 	_, err = datastore.Put(c, key, &Image{buf.Bytes()})
 	check(err)
 
