@@ -39,7 +39,7 @@ func initTemplateSet() *template.Set {
 		panic("can't read templates: " + err.String())
 	}
 	set := new(template.Set).Funcs(formatters)
-	err = set.Parse(string(bytes))
+	_, err = set.Parse(string(bytes))
 	if err != nil {
 		panic("can't parse templates: " + err.String())
 	}
@@ -151,12 +151,8 @@ func updateViewers(c appengine.Context, convKeyStringID string, f func(*Viewers)
 		return err
 	}
 	f(&v)
-	if len(v.Client) == 0 {
-		// delete viewer
-		err = datastore.Delete(c, viewersKey)
-	} else {
-		_, err = datastore.Put(c, viewersKey, &v)
-	}
+	_, err = datastore.Put(c, viewersKey, &v)
+	// TODO: clean up empty viewers at some point.
 	return err
 }
 
@@ -433,6 +429,13 @@ func img(w http.ResponseWriter, r *http.Request) {
 	key := datastore.NewKey("Image", r.FormValue("key"), 0, nil)
 	im := new(Image)
 	err := datastore.Get(c, key, im)
+	// We should make the Put of the image and the Get here be in a
+	// transaction, but this is a clunky way to avoid that complexity.
+	// It's common for the Put to succeed but this Get to fail.
+	for count := 0; err == datastore.ErrNoSuchEntity && count < 10; count++ {
+		time.Sleep(0.5e9)
+		err = datastore.Get(c, key, im)
+	}
 	check(err)
 
 	m, _, err := image.Decode(bytes.NewBuffer(im.Data))
