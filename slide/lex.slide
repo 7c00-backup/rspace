@@ -6,55 +6,31 @@ r@golang.org
 GTUG Sydney
 Aug 30, 2011
 
-Whole file
 
-Some Text
-Some More text
-- bullets
-- more bullets
 
-code x.go
+* A new template system
 
-Line 4
+Wanted to replace the old Go template package.
+It had many problems:
+- inflexible
+- inexpressive
+- code too fragile
 
-Some More text
-Some More text
-- bullets
-- more bullets
-code x.go 4
+* A new template system
 
-Line 4 with regexp
+Key change was re-engineering with a true lexer, parser,
+and evaluator.
 
-Some More text
-Some More text
-- bullets
-- more bullets
-code x.go /var/
+NEED EXAMPLES HERE
 
-Body of main
-
-Some More text
-Some More text
-- bullets
-- more bullets
-code x.go /^func.main/ /^}/
-
-Body of main with $
-
-Some More text
-Some More text
-- bullets
-- more bullets
-code x.go /^func.main/ $
-
-Lex items
+* Lex items
 
 Two things identify each lexed item:
 - its type
 - its value; a string is all we need
 code lex/lex1.go /item.represents/ /^}/
 
-Lex type
+* Lex type
 
 The type is just an integer constant.
 We use iota to define the values.
@@ -62,6 +38,12 @@ We use iota to define the values.
 code lex/lex1.go /itemType.identifies/ /type/
 code lex/lex1.go /const/ /itemEOF/
 
-Lex type values (continued)
+* Lex type values (continued)
 
 code lex/lex1.go /itemElse/ /^\)/
+
+* Printing a lex type
+
+Define a String() string method and the "enum" prints itself.
+
+code lex/lex1.go /func.*item.*String/ /^}/

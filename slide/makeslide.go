@@ -19,7 +19,7 @@ any text.
 
 After that come slides, each after a blank line:
 
-	Title of slide
+	* Title of slide (must have asterisk)
 
 	Some Text
 	Some More text
@@ -31,7 +31,7 @@ After that come slides, each after a blank line:
 	code y.go
 
 Blank lines are OK (not mandatory) after the title and after the text.
-Bullets and code are optional; text is not.
+Text, bullets, and code are all optional; title is not.
 
 Lines starting with # in column 1 are commentary.
 
@@ -162,6 +162,10 @@ func (l *Lines) next() (text string, ok bool) {
 	return
 }
 
+func (l *Lines) back() {
+	l.line--
+}
+
 func (l *Lines) nextNonEmpty() (text string, ok bool) {
 	for {
 		text, ok = l.next()
@@ -199,15 +203,21 @@ func parse(name string) *Pres {
 	for i := 0; ; i++ {
 		var slide Slide
 		slide.Number = i
-		// First non-empty line is title.
-		slide.Title, ok = lines.nextNonEmpty()
+		// Next non-empty line is title.
+		text, ok := lines.nextNonEmpty()
+		for ok && text == "" {
+			text, ok = lines.next()
+		}
 		if !ok {
 			break
 		}
+		if !strings.HasPrefix(text, "* ") {
+				log.Fatalf("%s:%d bad title %q", name, lines.line, text)
+		}
+		slide.Title = text[2:]
 		// Next non-empty line is first line of text.
-		var text string
 		text, ok = lines.nextNonEmpty()
-		for ok && !strings.HasPrefix(text, "- ") && !strings.HasPrefix(text, "code") {
+		for ok && !strings.HasPrefix(text, "- ") && !strings.HasPrefix(text, "code") && !strings.HasPrefix(text, "* "){
 			slide.Text = append(slide.Text, text)
 			text, ok = lines.next()
 		}
@@ -225,6 +235,9 @@ func parse(name string) *Pres {
 			}
 			slide.Code = append(slide.Code, Code{args[1], parseArgs(name, lines.line, args[2:])})
 			text, ok = lines.next()
+		}
+		if strings.HasPrefix(text, "* ") {
+			lines.back()
 		}
 		pres.Slide = append(pres.Slide, slide)
 	}
@@ -397,7 +410,6 @@ const textTemplate = `
 {{html $s.Title}}
 
 {{range $s.Text}}{{.}}
-{{end}}
-{{if $s.Bullets}}{{range $s.Bullets}}* {{.}}
+{{end}}{{if $s.Bullets}}{{range $s.Bullets}}* {{.}}
 {{end}}{{end}}
 {{range $s.Code}}{{code .File .Args}}{{end}}{{end}}`

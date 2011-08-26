@@ -90,160 +90,52 @@
 
 	<!-- start of slide 0 -->
         <div class="slide" id="slide-0">
-          <header>Whole file</header>
+          <header>A new template system</header>
 
           <section>
             <p>
-            Some Text<br>
+            Wanted to replace the old Go template package.<br>
             
-            Some More text<br>
+            It had many problems:<br>
             </p>
             
             <ul>
             
-            <li>bullets</li>
+            <li>inflexible</li>
             
-            <li>more bullets</li>
+            <li>inexpressive</li>
+            
+            <li>code too fragile</li>
             
             </ul>
             
 
-
-<pre>
-<!--{{code "x.go"}}
--->package main
-
-func main() {
-       var a int
-       p := &amp;a
-       _ = p
-}
-</pre>
 
           </section>
         </div> <!-- end slide template -->
       <!-- end of slide 0 --><!-- start of slide 1 -->
         <div class="slide" id="slide-1">
-          <header>Line 4</header>
+          <header>A new template system</header>
 
           <section>
             <p>
-            Some More text<br>
+            Key change was re-engineering with a true lexer, parser,<br>
             
-            Some More text<br>
+            and evaluator.<br>
+            
+            <br>
+            
+            NEED EXAMPLES HERE<br>
+            
+            <br>
             </p>
             
-            <ul>
-            
-            <li>bullets</li>
-            
-            <li>more bullets</li>
-            
-            </ul>
-            
 
-
-<pre>
-<!--{{code "x.go" 4}}
--->       var a int
-</pre>
 
           </section>
         </div> <!-- end slide template -->
       <!-- end of slide 1 --><!-- start of slide 2 -->
         <div class="slide" id="slide-2">
-          <header>Line 4 with regexp</header>
-
-          <section>
-            <p>
-            Some More text<br>
-            
-            Some More text<br>
-            </p>
-            
-            <ul>
-            
-            <li>bullets</li>
-            
-            <li>more bullets</li>
-            
-            </ul>
-            
-
-
-<pre>
-<!--{{code "x.go" `/var/`}}
--->       var a int
-</pre>
-
-          </section>
-        </div> <!-- end slide template -->
-      <!-- end of slide 2 --><!-- start of slide 3 -->
-        <div class="slide" id="slide-3">
-          <header>Body of main</header>
-
-          <section>
-            <p>
-            Some More text<br>
-            
-            Some More text<br>
-            </p>
-            
-            <ul>
-            
-            <li>bullets</li>
-            
-            <li>more bullets</li>
-            
-            </ul>
-            
-
-
-<pre>
-<!--{{code "x.go" `/^func.main/` `/^}/`}}
--->func main() {
-       var a int
-       p := &amp;a
-       _ = p
-}
-</pre>
-
-          </section>
-        </div> <!-- end slide template -->
-      <!-- end of slide 3 --><!-- start of slide 4 -->
-        <div class="slide" id="slide-4">
-          <header>Body of main with $</header>
-
-          <section>
-            <p>
-            Some More text<br>
-            
-            Some More text<br>
-            </p>
-            
-            <ul>
-            
-            <li>bullets</li>
-            
-            <li>more bullets</li>
-            
-            </ul>
-            
-
-
-<pre>
-<!--{{code "x.go" `/^func.main/` "$"}}
--->func main() {
-       var a int
-       p := &amp;a
-       _ = p
-}
-</pre>
-
-          </section>
-        </div> <!-- end slide template -->
-      <!-- end of slide 4 --><!-- start of slide 5 -->
-        <div class="slide" id="slide-5">
           <header>Lex items</header>
 
           <section>
@@ -272,8 +164,8 @@ type item struct {
 
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 5 --><!-- start of slide 6 -->
-        <div class="slide" id="slide-6">
+      <!-- end of slide 2 --><!-- start of slide 3 -->
+        <div class="slide" id="slide-3">
           <header>Lex type</header>
 
           <section>
@@ -304,8 +196,8 @@ type itemType int
 
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 6 --><!-- start of slide 7 -->
-        <div class="slide" id="slide-7">
+      <!-- end of slide 3 --><!-- start of slide 4 -->
+        <div class="slide" id="slide-4">
           <header>Lex type values (continued)</header>
 
           <section>
@@ -333,7 +225,38 @@ type itemType int
 
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 7 -->
+      <!-- end of slide 4 --><!-- start of slide 5 -->
+        <div class="slide" id="slide-5">
+          <header>Printing a lex type</header>
+
+          <section>
+            <p>
+            Define a String() string method and the &#34;enum&#34; prints itself.<br>
+            
+            <br>
+            </p>
+            
+
+
+<pre>
+<!--{{code "lex/lex1.go" `/func.*item.*String/` `/^}/`}}
+-->func (i item) String() string {
+    switch i.typ {
+    case itemEOF:
+        return &#34;EOF&#34;
+    case itemError:
+        return i.val
+    }
+    if len(i.val) &gt; 10 {
+        return fmt.Sprintf(&#34;%.10q...&#34;, i.val)
+    }
+    return fmt.Sprintf(&#34;%q&#34;, i.val)
+}
+</pre>
+
+          </section>
+        </div> <!-- end slide template -->
+      <!-- end of slide 5 -->
 
       </div>
 
