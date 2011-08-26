@@ -2,27 +2,60 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+/*
 
-// The template uses the function "code" to inject program
-// source into the output by extracting code from files and
-// injecting them as HTML-escaped <pre> blocks.
-//
-// The syntax is simple: 1, 2, or 3 space-separated arguments.
-// The first argument is always the file names.
-// The remainder are /-delimited patterns, decimal line numbers,
-// or $ to represent the end of the file.  No quotes and remember
-// the args are blank-seprated, so you might want to use . to
-// represent a blank.
-//
-// Whole file:
-//	code foo.go
-// One line (here the signature of main):
-//	code foo.go /^func.main/
-// Block of text, determined by start and end (here the body of main):
-//	code foo.go /^func.main/ /^}/
-//
-// Patterns can be `/regular expression/`, a decimal number, or "$"
-// to signify the end of the file.
+Slide files have the following format.  The first non-blank non-comment
+line is the title, so the header looks like
+
+	Title of presentation
+	Several lines of
+	Text such as the Author,
+	Date,
+	Venue,
+	etc.
+
+Only the title is treated specially, so the other lines can be
+any text.
+
+After that come slides, each after a blank line:
+
+	Title of slide
+
+	Some Text
+	Some More text
+
+	- bullets
+	- more bullets
+
+	code x.go
+
+Blank lines are OK (not mandatory) after the title and after the text.
+Bullets and code are optional; text is not.
+
+Lines starting with # in column 1 are commentary.
+
+The template uses the function "code" to inject program
+source into the output by extracting code from files and
+injecting them as HTML-escaped <pre> blocks.
+
+The syntax is simple: 1, 2, or 3 space-separated arguments.
+The first argument is always the file names.
+The remainder are /-delimited patterns, decimal line numbers,
+or $ to represent the end of the file.  No quotes and remember
+the args are blank-seprated, so you might want to use . to
+represent a blank.
+
+Whole file:
+code foo.go
+One line (here the signature of main):
+code foo.go /^func.main/
+Block of text, determined by start and end (here the body of main):
+code foo.go /^func.main/ /^}/
+
+Patterns can be `/regular expression/`, a decimal number, or "$"
+to signify the end of the file.
+
+*/
 package main
 
 import (
@@ -83,18 +116,15 @@ func main() {
 
 type Pres struct {
 	Title string
-	Author string // Can be empty
-	Mail string // Can be empty
-	Venue string // Can be empty
-	Date string // Can be empty
+	Info  []string
 	Slide []Slide
 }
 
 type Slide struct {
-	Number int
-	Title string
-	Text []string
-	Bullets []string
+	Number   int
+	Title    string
+	Text     []string
+	Bullets  []string
 	CodeFile string
 	CodeArgs []interface{}
 }
@@ -149,25 +179,16 @@ func parse(name string) *Pres {
 	if !ok {
 		log.Fatalf("no title")
 	}
-	// Next line is Author
-	pres.Author, ok = lines.next()
-	if !ok {
-		log.Fatalf("no author")
-	}
-	// Next line is mail
-	pres.Mail, ok = lines.next()
-	if !ok {
-		log.Fatalf("no mail address")
-	}
-	// Next line is venue
-	pres.Venue, ok = lines.next()
-	if !ok {
-		log.Fatalf("no venue")
-	}
-	// Next line is date
-	pres.Date, ok = lines.next()
-	if !ok {
-		log.Fatalf("no date")
+	// Suck up info.
+	for {
+		text, ok := lines.next()
+		if !ok {
+			log.Fatal("missing info")
+		}
+		if text == "" {
+			break
+		}
+		pres.Info = append(pres.Info, text)
 	}
 	// Slides
 	for i := 0; ; i++ {
@@ -181,16 +202,15 @@ func parse(name string) *Pres {
 		// Next non-empty line is first line of text.
 		var text string
 		text, ok = lines.nextNonEmpty()
-		if !ok || text[0] == '-' {
-			log.Fatalf("%s:%d no text for slide %q on line", name, lines.line, slide.Title)
-			break
-		}
 		for ok && !strings.HasPrefix(text, "- ") {
 			slide.Text = append(slide.Text, text)
 			text, ok = lines.next()
 		}
 		for ok && strings.HasPrefix(text, "- ") {
 			slide.Bullets = append(slide.Bullets, text[2:])
+			text, ok = lines.next()
+		}
+		for ok && text == "" {
 			text, ok = lines.next()
 		}
 		if ok && strings.HasPrefix(text, "code ") {
@@ -232,7 +252,6 @@ func parseArgs(name string, line int, args []string) (res []interface{}) {
 	}
 	return
 }
-
 
 // contents reads a file by name and returns its contents as a string.
 func contents(name string) string {
@@ -365,12 +384,10 @@ func match(file string, start int, lines []string, pattern string) int {
 
 const textTemplate = `
 {{.Title}}
-{{.Author}}
-{{.Mail}}
-{{.Venue}}
-{{.Date}}
-{{range $s := .Slide}}
----------------[{{$s.Number}}]
+
+{{range .Info}}{{.}}
+{{end}}
+{{range $s := .Slide}}---------------[{{$s.Number}}]
 
 {{html $s.Title}}
 

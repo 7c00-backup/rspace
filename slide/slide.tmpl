@@ -82,10 +82,7 @@
                 {{html .Title}}
               </h1>
               <h2>
-                {{html .Author}}<br>
-                {{html .Mail}}<br>
-                {{html .Venue}}<br>
-                {{html .Date}}<br>
+                {{range .Info}}{{html .}}<br>{{end}}
               </h2>
             </hgroup>
           </section>
