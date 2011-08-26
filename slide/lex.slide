@@ -1,0 +1,47 @@
+# This is a file.
+
+Lexical Scanning in Go
+Rob Pike
+r@golang.org
+GTUG Sydney
+Aug 30, 2011
+
+Whole file
+
+Some Text
+Some More text
+- bullets
+- more bullets
+code x.go
+
+Line 4
+
+Some More text
+Some More text
+- bullets
+- more bullets
+code x.go 4
+
+Line 4 with regexp
+
+Some More text
+Some More text
+- bullets
+- more bullets
+code x.go /var/
+
+Body of main
+
+Some More text
+Some More text
+- bullets
+- more bullets
+code x.go /^func.main/ /^}/
+
+Body of main with $
+
+Some More text
+Some More text
+- bullets
+- more bullets
+code x.go /^func.main/ $
