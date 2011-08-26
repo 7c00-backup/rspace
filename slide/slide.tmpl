@@ -104,9 +104,9 @@
             </ul>
             {{end}}
 
-{{if $s.CodeFile}}
+{{range $s.Code}}
 <pre>
-{{code $s.CodeFile $s.CodeArgs}}</pre>
+{{code .File .Args}}</pre>
 {{end}}
           </section>
         </div> <!-- end slide template -->

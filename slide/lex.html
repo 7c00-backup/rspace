@@ -82,10 +82,7 @@
                 Lexical Scanning in Go
               </h1>
               <h2>
-                Rob Pike<br>
-                r@golang.org<br>
-                GTUG Sydney<br>
-                Aug 30, 2011<br>
+                Rob Pike<br>r@golang.org<br>GTUG Sydney<br>Aug 30, 2011<br>
               </h2>
             </hgroup>
           </section>
@@ -245,7 +242,98 @@ func main() {
 
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 4 -->
+      <!-- end of slide 4 --><!-- start of slide 5 -->
+        <div class="slide" id="slide-5">
+          <header>Lex items</header>
+
+          <section>
+            <p>
+            Two things identify each lexed item:<br>
+            </p>
+            
+            <ul>
+            
+            <li>its type</li>
+            
+            <li>its value; a string is all we need</li>
+            
+            </ul>
+            
+
+
+<pre>
+<!--{{code "lex/lex1.go" `/item.represents/` `/^}/`}}
+-->// item represents a token returned from the scanner.
+type item struct {
+    typ itemType
+    val string
+}
+</pre>
+
+          </section>
+        </div> <!-- end slide template -->
+      <!-- end of slide 5 --><!-- start of slide 6 -->
+        <div class="slide" id="slide-6">
+          <header>Lex type</header>
+
+          <section>
+            <p>
+            The type is just an integer constant.<br>
+            
+            We use iota to define the values.<br>
+            
+            <br>
+            </p>
+            
+
+
+<pre>
+<!--{{code "lex/lex1.go" `/itemType.identifies/` `/type/`}}
+-->// itemType identifies the type of lex items.
+type itemType int
+</pre>
+
+<pre>
+<!--{{code "lex/lex1.go" `/const/` `/itemEOF/`}}
+-->const (
+    itemError itemType = iota // error occurred;
+                              // value is text of error
+    itemDot                   // the cursor, spelled &#39;.&#39;
+    itemEOF
+</pre>
+
+          </section>
+        </div> <!-- end slide template -->
+      <!-- end of slide 6 --><!-- start of slide 7 -->
+        <div class="slide" id="slide-7">
+          <header>Lex type values (continued)</header>
+
+          <section>
+            <p></p>
+            
+
+
+<pre>
+<!--{{code "lex/lex1.go" `/itemElse/` `/^\)/`}}
+-->    itemElse       // else keyword
+    itemEnd        // end keyword
+    itemField      // identifier, starting with &#39;.&#39;
+    itemIdentifier // identifier
+    itemIf         // if keyword
+    itemLeftMeta   // left meta-string
+    itemNumber     // number
+    itemPipe       // pipe symbol
+    itemRange      // range keyword
+    itemRawString  // raw quoted string (includes quotes)
+    itemRightMeta  // right meta-string
+    itemString     // quoted string (includes quotes)
+    itemText       // plain text
+)
+</pre>
+
+          </section>
+        </div> <!-- end slide template -->
+      <!-- end of slide 7 -->
 
       </div>
 

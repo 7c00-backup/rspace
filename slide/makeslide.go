@@ -28,6 +28,7 @@ After that come slides, each after a blank line:
 	- more bullets
 
 	code x.go
+	code y.go
 
 Blank lines are OK (not mandatory) after the title and after the text.
 Bullets and code are optional; text is not.
@@ -125,8 +126,12 @@ type Slide struct {
 	Title    string
 	Text     []string
 	Bullets  []string
-	CodeFile string
-	CodeArgs []interface{}
+	Code []Code
+}
+
+type Code struct {
+	File string
+	Args []interface{}
 }
 
 type Lines struct {
@@ -202,7 +207,7 @@ func parse(name string) *Pres {
 		// Next non-empty line is first line of text.
 		var text string
 		text, ok = lines.nextNonEmpty()
-		for ok && !strings.HasPrefix(text, "- ") {
+		for ok && !strings.HasPrefix(text, "- ") && !strings.HasPrefix(text, "code") {
 			slide.Text = append(slide.Text, text)
 			text, ok = lines.next()
 		}
@@ -213,13 +218,13 @@ func parse(name string) *Pres {
 		for ok && text == "" {
 			text, ok = lines.next()
 		}
-		if ok && strings.HasPrefix(text, "code ") {
+		for ok && strings.HasPrefix(text, "code ") {
 			args := strings.Fields(text)
 			if len(args) < 2 || args[0] != "code" {
 				log.Fatalf("%s:%d bad code invocation syntax %q", name, lines.line, text)
 			}
-			slide.CodeFile = args[1]
-			slide.CodeArgs = parseArgs(name, lines.line, args[2:])
+			slide.Code = append(slide.Code, Code{args[1], parseArgs(name, lines.line, args[2:])})
+			text, ok = lines.next()
 		}
 		pres.Slide = append(pres.Slide, slide)
 	}
@@ -236,18 +241,18 @@ func parseArgs(name string, line int, args []string) (res []interface{}) {
 		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
 			n, err := strconv.Atoi(v)
 			if err != nil {
-				log.Fatal("%s:%d bad code argument %q", name, line, v)
+				log.Fatalf("%s:%d bad code argument %q", name, line, v)
 			}
 			res[i] = n
 		case '/':
 			if len(v) < 2 || v[len(v)-1] != '/' {
-				log.Fatal("%s:%d bad code argument %q", name, line, v)
+				log.Fatalf("%s:%d bad code argument %q", name, line, v)
 			}
 			res[i] = v
 		case '$':
 			res[i] = "$"
 		default:
-			log.Fatal("%s:%d bad code argument %q", name, line, v)
+			log.Fatalf("%s:%d bad code argument %q", name, line, v)
 		}
 	}
 	return
@@ -395,4 +400,4 @@ const textTemplate = `
 {{end}}
 {{if $s.Bullets}}{{range $s.Bullets}}* {{.}}
 {{end}}{{end}}
-{{if $s.CodeFile}}{{code $s.CodeFile $s.CodeArgs}}{{end}}{{end}}`
+{{range $s.Code}}{{code .File .Args}}{{end}}{{end}}`

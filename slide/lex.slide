@@ -46,3 +46,22 @@ Some More text
 - bullets
 - more bullets
 code x.go /^func.main/ $
+
+Lex items
+
+Two things identify each lexed item:
+- its type
+- its value; a string is all we need
+code lex/lex1.go /item.represents/ /^}/
+
+Lex type
+
+The type is just an integer constant.
+We use iota to define the values.
+
+code lex/lex1.go /itemType.identifies/ /type/
+code lex/lex1.go /const/ /itemEOF/
+
+Lex type values (continued)
+
+code lex/lex1.go /itemElse/ /^\)/
