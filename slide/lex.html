@@ -317,11 +317,11 @@ type itemType int
         </div> <!-- end slide template -->
       <!-- end of slide 7 --><!-- start of slide 8 -->
         <div class="slide" id="slide-8">
-          <header>Printing a lex type</header>
+          <header>Printing a lex item</header>
 
           <section>
             <p>
-            Define a method String() string and the &#34;enum&#34; prints itself.<br>
+            Define a method String() string and Printf can print items without fuss.<br>
             
             <br>
             </p>
@@ -413,6 +413,8 @@ type itemType int
             
             <li>can explore the state space too much</li>
             
+            <li>misuse of a dynamic engine to ask static questions</li>
+            
             </ul>
             
 
@@ -475,13 +477,17 @@ case state3:
         </div> <!-- end slide template -->
       <!-- end of slide 13 --><!-- start of slide 14 -->
         <div class="slide" id="slide-14">
-          <header>State machine issue</header>
+          <header>State machines are forgetful</header>
 
           <section>
             <p>
             Why switch?<br>
             
             After each action, you know where you want to be.<br>
+            
+            But we throw the info away and recompute it from the state.<br>
+            
+            (A consequence of returning to the caller.)<br>
             
             A tool can compile that out, but so can we.<br>
             
@@ -1022,7 +1028,7 @@ func (l *lexer) acceptRun(valid string) {
 
           <section>
             <p>
-            Easy to do: emit the bad token and shut down the machine.<br>
+            Easy to handle: emit the bad token and shut down the machine.<br>
             
             <br>
             </p>
@@ -1045,7 +1051,24 @@ func (l *lexer) errorf(format string, args ...interface{}) stateFn {
 
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 34 -->
+      <!-- end of slide 34 --><!-- start of slide 35 -->
+        <div class="slide" id="slide-35">
+          <header>a few more slides to go</header>
+
+          <section>
+            <p>
+            sadf<br>
+            
+            asdf<br>
+            
+            <br>
+            </p>
+            
+
+
+          </section>
+        </div> <!-- end slide template -->
+      <!-- end of slide 35 -->
 
       </div>
 

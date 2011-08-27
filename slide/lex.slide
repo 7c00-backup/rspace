@@ -71,9 +71,9 @@ code lex/lex1.go /const/ /itemEOF/
 
 code lex/lex1.go /itemElse/ /^\)/
 
-* Printing a lex type
+* Printing a lex item
 
-Define a method String() string and the "enum" prints itself.
+Define a method String() string and Printf can print items without fuss.
 
 code lex/lex1.go /func.*item.*String/ /^}/
 
@@ -99,6 +99,7 @@ Blogged about this last week.
 - overkill
 - slow
 - can explore the state space too much
+- misuse of a dynamic engine to ask static questions
 
 * Let's write our own
 
@@ -115,10 +116,12 @@ something like this:
 
 code lex/snippets /switch/ /^}/
 
-* State machine issue
+* State machines are forgetful
 
 Why switch?
 After each action, you know where you want to be.
+But we throw the info away and recompute it from the state.
+(A consequence of returning to the caller.)
 A tool can compile that out, but so can we.
 
 * What is a state? An action?
