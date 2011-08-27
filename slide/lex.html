@@ -1059,9 +1059,13 @@ func (l *lexer) errorf(format string, args ...interface{}) stateFn {
             <p>
             Concurrency makes the lexer easy to design.<br>
             
-            [CG]oroutines allow lexer and caller (parser) each to run<br>
+            <br>
+            
+            Goroutines allow lexer and caller (parser) each to run<br>
             
             at its own rate.<br>
+            
+            <br>
             
             Channels give us a clean way to emit tokens.<br>
             
@@ -1072,7 +1076,184 @@ func (l *lexer) errorf(format string, args ...interface{}) stateFn {
 
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 35 -->
+      <!-- end of slide 35 --><!-- start of slide 36 -->
+        <div class="slide" id="slide-36">
+          <header>Design vs. implementation</header>
+
+          <section>
+            <p>
+            The goroutine is a problem for initialization.<br>
+            
+            But it&#39;s not necessary anyway.<br>
+            
+            <br>
+            
+            We can change the API to hide the channel, provide a function to get the next token, and rewrite the run function.<br>
+            
+            <br>
+            
+            It&#39;s easy.<br>
+            
+            <br>
+            </p>
+            
+
+
+          </section>
+        </div> <!-- end slide template -->
+      <!-- end of slide 36 --><!-- start of slide 37 -->
+        <div class="slide" id="slide-37">
+          <header>A new API</header>
+
+          <section>
+            <p>
+            Hide the channel and buffer it slightly, making it a ring buffer.<br>
+            
+            <br>
+            </p>
+            
+
+
+<pre>
+<!--{{code "lex/r59-lex.go" `/lex.creates.a.new/` `/^}/`}}
+-->// lex creates a new scanner for the input string.
+func lex(name, input string) *lexer {
+    l := &amp;lexer{
+        name:  name,
+        input: input,
+        state: lexText,
+        items: make(chan item, 2), // Two items of buffering is sufficient for all state functions
+    }
+    return l
+}
+</pre>
+
+          </section>
+        </div> <!-- end slide template -->
+      <!-- end of slide 37 --><!-- start of slide 38 -->
+        <div class="slide" id="slide-38">
+          <header>A function for the next item</header>
+
+          <section>
+            <p>
+            Includes the modified state machine runner<br>
+            
+            <br>
+            </p>
+            
+
+
+<pre>
+<!--{{code "lex/r59-lex.go" `/nextItem.returns/` `/^}/`}}
+-->// nextItem returns the next item from the input.
+func (l *lexer) nextItem() item {
+    for {
+        select {
+        case item := &lt;-l.items:
+            return item
+        default:
+            l.state = l.state(l)
+        }
+    }
+    panic(&#34;not reached&#34;)
+}
+</pre>
+
+          </section>
+        </div> <!-- end slide template -->
+      <!-- end of slide 38 --><!-- start of slide 39 -->
+        <div class="slide" id="slide-39">
+          <header>That&#39;s it</header>
+
+          <section>
+            <p>
+            We now have a traditional API for a lexer with a simple, concurrent implementation under the covers.<br>
+            
+            <br>
+            
+            Even though the implementation is no longer truly concurrent, it still has all the advantages of concurrent design.<br>
+            
+            <br>
+            </p>
+            
+
+
+          </section>
+        </div> <!-- end slide template -->
+      <!-- end of slide 39 --><!-- start of slide 40 -->
+        <div class="slide" id="slide-40">
+          <header>Concurrency is a design approach</header>
+
+          <section>
+            <p>
+            Concurrency is not about parallelism.<br>
+            
+            <br>
+            
+            (Although it can enable parallelism).<br>
+            
+            <br>
+            
+            Concurrency is a way to design a program by decomposing it into independently executing pieces.<br>
+            
+            <br>
+            
+            The result can be clean, efficient, and very adaptable.<br>
+            
+            <br>
+            </p>
+            
+
+
+          </section>
+        </div> <!-- end slide template -->
+      <!-- end of slide 40 --><!-- start of slide 41 -->
+        <div class="slide" id="slide-41">
+          <header>Conclusion</header>
+
+          <section>
+            <p>
+            Lexers are fun.<br>
+            
+            <br>
+            
+            Concurrency is fun.<br>
+            
+            <br>
+            
+            Go is fun.<br>
+            
+            <br>
+            </p>
+            
+
+
+          </section>
+        </div> <!-- end slide template -->
+      <!-- end of slide 41 --><!-- start of slide 42 -->
+        <div class="slide" id="slide-42">
+          <header>For more information</header>
+
+          <section>
+            <p>
+            Go: http://golang.org<br>
+            
+            <br>
+            
+            New templates: http://golang.org/pkg/exp/template/<br>
+            
+            <br>
+            
+            (Next release will move them out of experimental.)<br>
+            
+            <br>
+            </p>
+            
+
+
+          </section>
+        </div> <!-- end slide template -->
+      <!-- end of slide 42 -->
 
       </div>
 

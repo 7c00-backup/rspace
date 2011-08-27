@@ -240,6 +240,61 @@ code lex/lex1.go /error.returns/ /^}/
 * Summary
 
 Concurrency makes the lexer easy to design.
-[CG]oroutines allow lexer and caller (parser) each to run
+
+Goroutines allow lexer and caller (parser) each to run
 at its own rate.
+
 Channels give us a clean way to emit tokens.
+
+* Design vs. implementation
+
+The goroutine is a problem for initialization.
+But it's not necessary anyway.
+
+We can change the API to hide the channel, provide a function to get the next token, and rewrite the run function.
+
+It's easy.
+
+* A new API
+
+Hide the channel and buffer it slightly, making it a ring buffer.
+
+code lex/r59-lex.go /lex.creates.a.new/ /^}/
+
+* A function for the next item
+
+Includes the modified state machine runner
+
+code lex/r59-lex.go /nextItem.returns/ /^}/
+
+* That's it
+
+We now have a traditional API for a lexer with a simple, concurrent implementation under the covers.
+
+Even though the implementation is no longer truly concurrent, it still has all the advantages of concurrent design.
+
+* Concurrency is a design approach
+
+Concurrency is not about parallelism.
+
+(Although it can enable parallelism).
+
+Concurrency is a way to design a program by decomposing it into independently executing pieces.
+
+The result can be clean, efficient, and very adaptable.
+
+* Conclusion
+
+Lexers are fun.
+
+Concurrency is fun.
+
+Go is fun.
+
+* For more information
+
+Go: http://golang.org
+
+New templates: http://golang.org/pkg/exp/template/
+
+(Next release will move them out of experimental.)
