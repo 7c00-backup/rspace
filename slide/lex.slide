@@ -6,6 +6,24 @@ r@golang.org
 GTUG Sydney
 Aug 30, 2011
 
+* Structural mismatch
+
+Many programming problems realign one data structure to fit another structure.
+- breaking text into lines
+- "blocking" and "deblocking"
+- packet assembly and disassembly
+- parsing
+- lexing
+
+* Sometimes hard
+
+The pieces on either side have independent state, lookahead, buffers, ...
+Can be messy to do well.
+
+Coroutines were invented to solve this problem!
+They enable us to write the two pieces independently.
+
+Let's look at this topic in the context of a lexer.
 
 
 * A new template system
@@ -20,8 +38,19 @@ It had many problems:
 
 Key change was re-engineering with a true lexer, parser,
 and evaluator.
+Has (ignored) text plus actions in {{ }}
 
-NEED EXAMPLES HERE
+code lex/snippets /Evaluation/ /Control.structures/
+
+* Focus on the lexer
+
+Must tokenize:
+- the stuff outside actions
+- action delimiters
+- identifiers
+- numeric constants
+- string constants
+- and others
 
 * Lex items
 
@@ -44,6 +73,168 @@ code lex/lex1.go /itemElse/ /^\)/
 
 * Printing a lex type
 
-Define a String() string method and the "enum" prints itself.
+Define a method String() string and the "enum" prints itself.
 
 code lex/lex1.go /func.*item.*String/ /^}/
+
+* How to tokenize?
+
+Many approaches available
+- use a tool such as lex or ragel
+- use regular expressions
+- use states, actions, and a switch statement
+
+* Tools
+
+Nothing wrong with using a tool but:
+- hard to get good errors (can be very important)
+- tend to require learning another language
+- result can be large, even slow
+- but lexing is easy to do yourself
+- often a poor fit
+
+* Regular expressions
+
+Blogged about this last week.
+- overkill
+- slow
+- can explore the state space too much
+
+* Let's write our own
+
+It's easy!  And most programming languages lex pretty
+much the same tokens, so once we learn how it's easy
+to adapt the lexer for the next purpose.
+
+- an argument both for and against tools
+
+* State machine
+
+Many people will tell you to write a switch statement,
+something like this:
+
+code lex/snippets /switch/ /^}/
+
+* State machine issue
+
+Why switch?
+After each action, you know where you want to be.
+A tool can compile that out, but so can we.
+
+* What is a state? An action?
+
+State represents what we want to do next.
+Action represents what we do.
+
+* State function
+
+Let's put them together: a state function.
+
+code lex/lex1.go /stateFn/ /type/
+
+* The run loop
+
+Our state machine is trivial:
+just run until the state goes to nil.
+
+code lex/snippets /run.lexes/ /^}/
+
+* The concurrent step
+
+How do we make tokens available to the client?
+Tokens can emerge at times that are inconvenient to stop to return to the caller.
+
+Use concurrency:
+Run the state machine as a goroutine,
+emit values on a channel.
+
+* The lexer type
+
+Here is the lexer type. Notice the channel of items; ignore the rest for now.
+
+code lex/lex1.go /lexer.holds/ /^}/
+
+* Starting the lexer
+
+A lexer initializes itself to lex a string and launches the state machine as a goroutine, returning the lexer itself and a channel of items.
+The API will change, don't worry about it.
+
+code lex/lex1.go /func.lex/ /^}/
+
+* The real run routine
+
+Here's the real state machine run function.
+
+code lex/lex1.go /run.lexes/ /^}/
+
+* The token emitter
+
+A token is a type and a value, but (yay Go) the value can just be sliced from the input string.
+The lexer remembers where it is in the input and the emit routine just lobs that substring to the caller as the token's value.
+
+code lex/lex1.go /input.*scanned/ /pos.*position/
+code lex/lex1.go /emit.passes/ /^}/
+
+* Starting the machine
+
+As the lexer begins it's looking for plain text, so the initial state is the function lexText.
+It absorbs all plain text until a "left meta" is encountered.
+
+code lex/lex1.go /run.lexes/ /^}/
+code lex/lex1.go /leftMeta/
+
+* lexText
+
+code lex/lex1.go /^func.lexText/ /^}/
+
+* lexLeftMeta
+
+code lex/lex1.go /^func.lexLeftMeta/ /^}/
+
+* lexInsideAction
+
+code lex/lex1.go /^func.lexInsideAction/ /itemPipe/
+
+* More of lexInsideAction
+
+This will give you the flavor.
+code lex/lex1.go /case.*"/ /lexRawQuote/
+code lex/lex1.go /case.*9/ /lexIdentifier/
+
+* The next function.
+
+code lex/lex1.go /next.returns.the/ /^}/
+
+* Some lexing helpers.
+
+code lex/lex1.go /ignore.skips/ /^}/
+code lex/lex1.go /backup.steps/ /^}/
+
+* The peek function.
+
+code lex/lex1.go /peek.returns.but/ /^}/
+
+* The accept functions.
+
+code lex/lex1.go /accept.consumes/ /^}/
+code lex/lex1.go /acceptRun.consumes/ /^}/
+
+* Lexing a number, including floating point.
+
+code lex/lex1.go /^func.lexNumber/ /imaginary/
+
+* Lexing a number, continued
+
+This is more accepting than it should be, but not by much. Caller must call Atof to validate.
+code lex/lex1.go /Is.it.imaginary/ /^}/
+
+* Errors
+
+Easy to handle: emit the bad token and shut down the machine.
+
+code lex/lex1.go /error.returns/ /^}/
+
+* a few more slides to go
+
+sadf
+asdf

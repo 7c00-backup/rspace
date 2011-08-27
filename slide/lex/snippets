@@ -1,0 +1,20 @@
+Evaluation: {{.Title}}
+Constants and functions: {{printf "%d %q: %#3X" 23 .Title .Id}}
+Control structures {{range $s.Text}} {{.}} {{end}}
+
+switch state {
+case state1: 
+	state = action1()
+case state2:
+	state = action2()
+case state3: 
+	state = action3()
+}
+
+// run lexes the input by executing state functions
+// until the state is nil.
+func run() {
+	for state := startState; state != nil; {
+		state = state(lexer)
+	}
+}
