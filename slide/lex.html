@@ -1053,13 +1053,17 @@ func (l *lexer) errorf(format string, args ...interface{}) stateFn {
         </div> <!-- end slide template -->
       <!-- end of slide 34 --><!-- start of slide 35 -->
         <div class="slide" id="slide-35">
-          <header>a few more slides to go</header>
+          <header>Summary</header>
 
           <section>
             <p>
-            sadf<br>
+            Concurrency makes the lexer easy to design.<br>
             
-            asdf<br>
+            [CG]oroutines allow lexer and caller (parser) each to run<br>
+            
+            at its own rate.<br>
+            
+            Channels give us a clean way to emit tokens.<br>
             
             <br>
             </p>
