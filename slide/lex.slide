@@ -237,7 +237,9 @@ Easy to handle: emit the bad token and shut down the machine.
 
 code lex/lex1.go /error.returns/ /^}/
 
-* a few more slides to go
+* Summary
 
-sadf
-asdf
+Concurrency makes the lexer easy to design.
+[CG]oroutines allow lexer and caller (parser) each to run
+at its own rate.
+Channels give us a clean way to emit tokens.
