@@ -99,7 +99,7 @@ type stateFn func(*lexer) stateFn
 
 // lexer holds the state of the scanner.
 type lexer struct {
-	name  string    // the name of the input; used only for error reports.
+	name  string    // used only for error reports.
 	input string    // the string being scanned.
 	start int       // start position of this item.
 	pos   int       // current position in the input.
@@ -119,14 +119,16 @@ func (l *lexer) next() (rune int) {
 	return rune
 }
 
-// peek returns but does not consume the next rune in the input.
+// peek returns but does not consume
+//the next rune in the input.
 func (l *lexer) peek() int {
 	rune := l.next()
 	l.backup()
 	return rune
 }
 
-// backup steps back one rune. Can only be called once per call of next.
+// backup steps back one rune.
+// Can be called only once per call of next.
 func (l *lexer) backup() {
 	l.pos -= l.width
 }
@@ -142,7 +144,8 @@ func (l *lexer) ignore() {
 	l.start = l.pos
 }
 
-// accept consumes the next rune if it's from the valid set.
+// accept consumes the next rune
+// if it's from the valid set.
 func (l *lexer) accept(valid string) bool {
 	if strings.IndexRune(valid, l.next()) >= 0 {
 		return true
@@ -181,7 +184,7 @@ func (l *lexer) run() {
 	for state := lexText; state != nil; {
 		state = state(l)
 	}
-	close(l.items)
+	close(l.items) // No more tokens will be delivered.
 }
 
 // lex launches a new scanner and returns the channel of items.
@@ -207,7 +210,7 @@ func lexText(l *lexer) stateFn {
 			if l.pos > l.start {
 				l.emit(itemText)
 			}
-			return lexLeftMeta
+			return lexLeftMeta    // Next state.
 		}
 		if l.next() == eof { break }
 	}
@@ -215,15 +218,15 @@ func lexText(l *lexer) stateFn {
 	if l.pos > l.start {
 		l.emit(itemText)
 	}
-	l.emit(itemEOF)
-	return nil
+	l.emit(itemEOF)  // Useful to make EOF a token.
+	return nil       // Stop the run loop.
 }
 
 // leftMeta scans the left "metacharacter", which is known to be present.
 func lexLeftMeta(l *lexer) stateFn {
 	l.pos += len(leftMeta)
 	l.emit(itemLeftMeta)
-	return lexInsideAction
+	return lexInsideAction    // Now inside {{ }}.
 }
 
 // rightMeta scans the right "metacharacter", which is known to be present.
@@ -262,7 +265,7 @@ func lexInsideAction(l *lexer) stateFn {
 				}
 			}
 			fallthrough // '.' can start a number.
-		case r == '+' || r == '-' || ('0' <= r && r <= '9'):
+		case r == '+' || r == '-' || '0' <= r && r <= '9':
 			l.backup()
 			return lexNumber
 		case isAlphaNumeric(r):

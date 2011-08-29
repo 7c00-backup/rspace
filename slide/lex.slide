@@ -38,11 +38,11 @@ It had many problems:
 
 Key change was re-engineering with a true lexer, parser,
 and evaluator.
-Has (ignored) text plus actions in {{ }}
+Has arbitrary text plus actions in {{ }}.
 
 code lex/snippets /Evaluation/ /Control.structures/
 
-* Focus on the lexer
+* Today we focus on the lexer
 
 Must tokenize:
 - the stuff outside actions
@@ -63,7 +63,6 @@ code lex/lex1.go /item.represents/ /^}/
 
 The type is just an integer constant.
 We use iota to define the values.
-
 code lex/lex1.go /itemType.identifies/ /type/
 code lex/lex1.go /const/ /itemEOF/
 
@@ -79,7 +78,7 @@ code lex/lex1.go /func.*item.*String/ /^}/
 
 * How to tokenize?
 
-Many approaches available
+Many approaches available:
 - use a tool such as lex or ragel
 - use regular expressions
 - use states, actions, and a switch statement
@@ -90,8 +89,8 @@ Nothing wrong with using a tool but:
 - hard to get good errors (can be very important)
 - tend to require learning another language
 - result can be large, even slow
-- but lexing is easy to do yourself
 - often a poor fit
+- but lexing is easy to do yourself!
 
 * Regular expressions
 
@@ -103,9 +102,9 @@ Blogged about this last week.
 
 * Let's write our own
 
-It's easy!  And most programming languages lex pretty
-much the same tokens, so once we learn how it's easy
-to adapt the lexer for the next purpose.
+It's easy!
+
+Plus, most programming languages lex pretty much the same tokens, so once we learn how it's trivial to adapt the lexer for the next purpose.
 
 - an argument both for and against tools
 
@@ -119,26 +118,38 @@ code lex/snippets /switch/ /^}/
 * State machines are forgetful
 
 Why switch?
-After each action, you know where you want to be.
+
+After each action, you know where you want to be;
+the new state is the result of the action.
+
 But we throw the info away and recompute it from the state.
+
 (A consequence of returning to the caller.)
+
 A tool can compile that out, but so can we.
 
 * What is a state? An action?
 
 State represents what we want to do next.
+
 Action represents what we do.
+
+Actions result in a new state.
 
 * State function
 
 Let's put them together: a state function.
+
+Executes an action, returns the next state - as a state function.
+
+Recursive definition but simple and clear.
 
 code lex/lex1.go /stateFn/ /type/
 
 * The run loop
 
 Our state machine is trivial:
-just run until the state goes to nil.
+just run until the state goes to nil, representing "done".
 
 code lex/snippets /run.lexes/ /^}/
 
@@ -160,7 +171,8 @@ code lex/lex1.go /lexer.holds/ /^}/
 * Starting the lexer
 
 A lexer initializes itself to lex a string and launches the state machine as a goroutine, returning the lexer itself and a channel of items.
-The API will change, don't worry about it.
+
+The API will change, don't worry about it now.
 
 code lex/lex1.go /func.lex/ /^}/
 
@@ -181,7 +193,7 @@ code lex/lex1.go /emit.passes/ /^}/
 * Starting the machine
 
 As the lexer begins it's looking for plain text, so the initial state is the function lexText.
-It absorbs all plain text until a "left meta" is encountered.
+It absorbs plain text until a "left meta" is encountered.
 
 code lex/lex1.go /run.lexes/ /^}/
 code lex/lex1.go /leftMeta/
@@ -191,6 +203,9 @@ code lex/lex1.go /leftMeta/
 code lex/lex1.go /^func.lexText/ /^}/
 
 * lexLeftMeta
+
+A trivial state function.
+When we get here, we know there's a leftMeta in the input.
 
 code lex/lex1.go /^func.lexLeftMeta/ /^}/
 
@@ -204,20 +219,20 @@ This will give you the flavor.
 code lex/lex1.go /case.*"/ /lexRawQuote/
 code lex/lex1.go /case.*9/ /lexIdentifier/
 
-* The next function.
+* The next function
 
 code lex/lex1.go /next.returns.the/ /^}/
 
-* Some lexing helpers.
+* Some lexing helpers
 
 code lex/lex1.go /ignore.skips/ /^}/
 code lex/lex1.go /backup.steps/ /^}/
 
-* The peek function.
+* The peek function
 
 code lex/lex1.go /peek.returns.but/ /^}/
 
-* The accept functions.
+* The accept functions
 
 code lex/lex1.go /accept.consumes/ /^}/
 code lex/lex1.go /acceptRun.consumes/ /^}/
@@ -241,8 +256,7 @@ code lex/lex1.go /error.returns/ /^}/
 
 Concurrency makes the lexer easy to design.
 
-Goroutines allow lexer and caller (parser) each to run
-at its own rate.
+Goroutines allow lexer and caller (parser) each to run at its own rate, as clean sequential code.
 
 Channels give us a clean way to emit tokens.
 
@@ -257,14 +271,14 @@ It's easy.
 
 * A new API
 
-Hide the channel and buffer it slightly, making it a ring buffer.
+Hide the channel and buffer it slightly, turning it into a ring buffer.
 
 code lex/r59-lex.go /lex.creates.a.new/ /^}/
 
 * A function for the next item
 
-Includes the modified state machine runner
-
+Traditional lexer API: return next item.
+Includes the modified state machine runner.
 code lex/r59-lex.go /nextItem.returns/ /^}/
 
 * That's it
@@ -272,6 +286,10 @@ code lex/r59-lex.go /nextItem.returns/ /^}/
 We now have a traditional API for a lexer with a simple, concurrent implementation under the covers.
 
 Even though the implementation is no longer truly concurrent, it still has all the advantages of concurrent design.
+
+We wouldn't have such a clean, efficient design if we hadn't thought about the problem in a concurrent way, without worrying about "restart".
+
+Model completely removes concerns about "structural mismatch".
 
 * Concurrency is a design approach
 

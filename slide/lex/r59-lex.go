@@ -202,7 +202,7 @@ func lex(name, input string) *lexer {
 		name:  name,
 		input: input,
 		state: lexText,
-		items: make(chan item, 2), // Two items of buffering is sufficient for all state functions
+		items: make(chan item, 2), // Two items sufficient.
 	}
 	return l
 }

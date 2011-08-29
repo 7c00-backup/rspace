@@ -179,7 +179,7 @@
             
             and evaluator.<br>
             
-            Has (ignored) text plus actions in {{ }}<br>
+            Has arbitrary text plus actions in {{ }}.<br>
             
             <br>
             </p>
@@ -197,7 +197,7 @@ Control structures {{range $s.Text}} {{.}} {{end}}
         </div> <!-- end slide template -->
       <!-- end of slide 3 --><!-- start of slide 4 -->
         <div class="slide" id="slide-4">
-          <header>Focus on the lexer</header>
+          <header>Today we focus on the lexer</header>
 
           <section>
             <p>
@@ -263,8 +263,6 @@ type item struct {
             The type is just an integer constant.<br>
             
             We use iota to define the values.<br>
-            
-            <br>
             </p>
             
 
@@ -352,7 +350,7 @@ type itemType int
 
           <section>
             <p>
-            Many approaches available<br>
+            Many approaches available:<br>
             </p>
             
             <ul>
@@ -386,9 +384,9 @@ type itemType int
             
             <li>result can be large, even slow</li>
             
-            <li>but lexing is easy to do yourself</li>
-            
             <li>often a poor fit</li>
+            
+            <li>but lexing is easy to do yourself!</li>
             
             </ul>
             
@@ -427,11 +425,11 @@ type itemType int
 
           <section>
             <p>
-            It&#39;s easy!  And most programming languages lex pretty<br>
+            It&#39;s easy!<br>
             
-            much the same tokens, so once we learn how it&#39;s easy<br>
+            <br>
             
-            to adapt the lexer for the next purpose.<br>
+            Plus, most programming languages lex pretty much the same tokens, so once we learn how it&#39;s trivial to adapt the lexer for the next purpose.<br>
             
             <br>
             </p>
@@ -483,11 +481,21 @@ case state3:
             <p>
             Why switch?<br>
             
-            After each action, you know where you want to be.<br>
+            <br>
+            
+            After each action, you know where you want to be;<br>
+            
+            the new state is the result of the action.<br>
+            
+            <br>
             
             But we throw the info away and recompute it from the state.<br>
             
+            <br>
+            
             (A consequence of returning to the caller.)<br>
+            
+            <br>
             
             A tool can compile that out, but so can we.<br>
             
@@ -506,7 +514,13 @@ case state3:
             <p>
             State represents what we want to do next.<br>
             
+            <br>
+            
             Action represents what we do.<br>
+            
+            <br>
+            
+            Actions result in a new state.<br>
             
             <br>
             </p>
@@ -522,6 +536,14 @@ case state3:
           <section>
             <p>
             Let&#39;s put them together: a state function.<br>
+            
+            <br>
+            
+            Executes an action, returns the next state - as a state function.<br>
+            
+            <br>
+            
+            Recursive definition but simple and clear.<br>
             
             <br>
             </p>
@@ -545,7 +567,7 @@ type stateFn func(*lexer) stateFn
             <p>
             Our state machine is trivial:<br>
             
-            just run until the state goes to nil.<br>
+            just run until the state goes to nil, representing &#34;done&#34;.<br>
             
             <br>
             </p>
@@ -607,7 +629,7 @@ func run() {
 <!--{{code "lex/lex1.go" `/lexer.holds/` `/^}/`}}
 -->// lexer holds the state of the scanner.
 type lexer struct {
-    name  string    // the name of the input; used only for error reports.
+    name  string    // used only for error reports.
     input string    // the string being scanned.
     start int       // start position of this item.
     pos   int       // current position in the input.
@@ -626,7 +648,9 @@ type lexer struct {
             <p>
             A lexer initializes itself to lex a string and launches the state machine as a goroutine, returning the lexer itself and a channel of items.<br>
             
-            The API will change, don&#39;t worry about it.<br>
+            <br>
+            
+            The API will change, don&#39;t worry about it now.<br>
             
             <br>
             </p>
@@ -669,7 +693,7 @@ func (l *lexer) run() {
     for state := lexText; state != nil; {
         state = state(l)
     }
-    close(l.items)
+    close(l.items) // No more tokens will be delivered.
 }
 </pre>
 
@@ -716,7 +740,7 @@ func (l *lexer) emit(t itemType) {
             <p>
             As the lexer begins it&#39;s looking for plain text, so the initial state is the function lexText.<br>
             
-            It absorbs all plain text until a &#34;left meta&#34; is encountered.<br>
+            It absorbs plain text until a &#34;left meta&#34; is encountered.<br>
             
             <br>
             </p>
@@ -731,7 +755,7 @@ func (l *lexer) run() {
     for state := lexText; state != nil; {
         state = state(l)
     }
-    close(l.items)
+    close(l.items) // No more tokens will be delivered.
 }
 </pre>
 
@@ -759,7 +783,7 @@ func (l *lexer) run() {
             if l.pos &gt; l.start {
                 l.emit(itemText)
             }
-            return lexLeftMeta
+            return lexLeftMeta    // Next state.
         }
         if l.next() == eof { break }
     }
@@ -767,8 +791,8 @@ func (l *lexer) run() {
     if l.pos &gt; l.start {
         l.emit(itemText)
     }
-    l.emit(itemEOF)
-    return nil
+    l.emit(itemEOF)  // Useful to make EOF a token.
+    return nil       // Stop the run loop.
 }
 </pre>
 
@@ -779,7 +803,13 @@ func (l *lexer) run() {
           <header>lexLeftMeta</header>
 
           <section>
-            <p></p>
+            <p>
+            A trivial state function.<br>
+            
+            When we get here, we know there&#39;s a leftMeta in the input.<br>
+            
+            <br>
+            </p>
             
 
 
@@ -788,7 +818,7 @@ func (l *lexer) run() {
 -->func lexLeftMeta(l *lexer) stateFn {
     l.pos += len(leftMeta)
     l.emit(itemLeftMeta)
-    return lexInsideAction
+    return lexInsideAction    // Now inside {{ }}.
 }
 </pre>
 
@@ -845,7 +875,7 @@ func (l *lexer) run() {
 
 <pre>
 <!--{{code "lex/lex1.go" `/case.*9/` `/lexIdentifier/`}}
--->        case r == &#39;+&#39; || r == &#39;-&#39; || (&#39;0&#39; &lt;= r &amp;&amp; r &lt;= &#39;9&#39;):
+-->        case r == &#39;+&#39; || r == &#39;-&#39; || &#39;0&#39; &lt;= r &amp;&amp; r &lt;= &#39;9&#39;:
             l.backup()
             return lexNumber
         case isAlphaNumeric(r):
@@ -857,7 +887,7 @@ func (l *lexer) run() {
         </div> <!-- end slide template -->
       <!-- end of slide 27 --><!-- start of slide 28 -->
         <div class="slide" id="slide-28">
-          <header>The next function.</header>
+          <header>The next function</header>
 
           <section>
             <p></p>
@@ -883,7 +913,7 @@ func (l *lexer) next() (rune int) {
         </div> <!-- end slide template -->
       <!-- end of slide 28 --><!-- start of slide 29 -->
         <div class="slide" id="slide-29">
-          <header>Some lexing helpers.</header>
+          <header>Some lexing helpers</header>
 
           <section>
             <p></p>
@@ -900,7 +930,8 @@ func (l *lexer) ignore() {
 
 <pre>
 <!--{{code "lex/lex1.go" `/backup.steps/` `/^}/`}}
--->// backup steps back one rune. Can only be called once per call of next.
+-->// backup steps back one rune.
+// Can be called only once per call of next.
 func (l *lexer) backup() {
     l.pos -= l.width
 }
@@ -910,7 +941,7 @@ func (l *lexer) backup() {
         </div> <!-- end slide template -->
       <!-- end of slide 29 --><!-- start of slide 30 -->
         <div class="slide" id="slide-30">
-          <header>The peek function.</header>
+          <header>The peek function</header>
 
           <section>
             <p></p>
@@ -919,7 +950,8 @@ func (l *lexer) backup() {
 
 <pre>
 <!--{{code "lex/lex1.go" `/peek.returns.but/` `/^}/`}}
--->// peek returns but does not consume the next rune in the input.
+-->// peek returns but does not consume
+//the next rune in the input.
 func (l *lexer) peek() int {
     rune := l.next()
     l.backup()
@@ -931,7 +963,7 @@ func (l *lexer) peek() int {
         </div> <!-- end slide template -->
       <!-- end of slide 30 --><!-- start of slide 31 -->
         <div class="slide" id="slide-31">
-          <header>The accept functions.</header>
+          <header>The accept functions</header>
 
           <section>
             <p></p>
@@ -940,7 +972,8 @@ func (l *lexer) peek() int {
 
 <pre>
 <!--{{code "lex/lex1.go" `/accept.consumes/` `/^}/`}}
--->// accept consumes the next rune if it&#39;s from the valid set.
+-->// accept consumes the next rune
+// if it&#39;s from the valid set.
 func (l *lexer) accept(valid string) bool {
     if strings.IndexRune(valid, l.next()) &gt;= 0 {
         return true
@@ -1061,9 +1094,7 @@ func (l *lexer) errorf(format string, args ...interface{}) stateFn {
             
             <br>
             
-            Goroutines allow lexer and caller (parser) each to run<br>
-            
-            at its own rate.<br>
+            Goroutines allow lexer and caller (parser) each to run at its own rate, as clean sequential code.<br>
             
             <br>
             
@@ -1107,7 +1138,7 @@ func (l *lexer) errorf(format string, args ...interface{}) stateFn {
 
           <section>
             <p>
-            Hide the channel and buffer it slightly, making it a ring buffer.<br>
+            Hide the channel and buffer it slightly, turning it into a ring buffer.<br>
             
             <br>
             </p>
@@ -1122,7 +1153,7 @@ func lex(name, input string) *lexer {
         name:  name,
         input: input,
         state: lexText,
-        items: make(chan item, 2), // Two items of buffering is sufficient for all state functions
+        items: make(chan item, 2), // Two items sufficient.
     }
     return l
 }
@@ -1136,9 +1167,9 @@ func lex(name, input string) *lexer {
 
           <section>
             <p>
-            Includes the modified state machine runner<br>
+            Traditional lexer API: return next item.<br>
             
-            <br>
+            Includes the modified state machine runner.<br>
             </p>
             
 
@@ -1172,6 +1203,14 @@ func (l *lexer) nextItem() item {
             <br>
             
             Even though the implementation is no longer truly concurrent, it still has all the advantages of concurrent design.<br>
+            
+            <br>
+            
+            We wouldn&#39;t have such a clean, efficient design if we hadn&#39;t thought about the problem in a concurrent way, without worrying about &#34;restart&#34;.<br>
+            
+            <br>
+            
+            Model completely removes concerns about &#34;structural mismatch&#34;.<br>
             
             <br>
             </p>
