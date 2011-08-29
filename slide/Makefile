@@ -8,7 +8,7 @@ TARG=makeslide
 GOFILES=\
 	makeslide.go\
 
-lex.html: lex.slide makeslide slide.tmpl lex/lex1.go lex/r59-lex.go
+lex.html: lex.slide makeslide slide.tmpl lex/lex1.go lex/r59-lex.go lex/snippets
 	makeslide lex.slide > lex.html
 
 

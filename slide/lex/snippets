@@ -1,5 +1,5 @@
 Evaluation: {{.Title}}
-Constants and functions: {{printf "%d %q: %#3X" 23 .Title .Id}}
+Constants and functions: {{printf "%g: %#3X" 1.2+2i 123}}
 Control structures {{range $s.Text}} {{.}} {{end}}
 
 switch state {

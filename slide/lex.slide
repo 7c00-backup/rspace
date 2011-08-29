@@ -237,7 +237,7 @@ code lex/lex1.go /peek.returns.but/ /^}/
 code lex/lex1.go /accept.consumes/ /^}/
 code lex/lex1.go /acceptRun.consumes/ /^}/
 
-* Lexing a number, including floating point.
+* Lexing a number, including floating point
 
 code lex/lex1.go /^func.lexNumber/ /imaginary/
 
