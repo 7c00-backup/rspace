@@ -64,6 +64,12 @@
           </section>
         </div>
 
+        <div class="slide" id="hello">
+          <section class="middle">
+            <hgroup><img src="http://golang.org/doc/gopher/bumper640x360.png"></hgroup>
+          </section>
+        </div>
+
         <div class="slide" id="title-slide">
           <style>
             #title-slide h1, #title-slide h2 {
@@ -319,7 +325,7 @@ type itemType int
 
           <section>
             <p>
-            Define a method String() string and Printf can print items without fuss.<br>
+            Printf has a convention making it easy to print any type: just define a String() method:<br>
             
             <br>
             </p>
@@ -656,8 +662,6 @@ type lexer struct {
             <br>
             
             The API will change, don&#39;t worry about it now.<br>
-            
-            <br>
             </p>
             
 
@@ -956,7 +960,7 @@ func (l *lexer) backup() {
 <pre>
 <!--{{code "lex/lex1.go" `/peek.returns.but/` `/^}/`}}
 -->// peek returns but does not consume
-//the next rune in the input.
+// the next rune in the input.
 func (l *lexer) peek() int {
     rune := l.next()
     l.backup()
@@ -1078,7 +1082,8 @@ func (l *lexer) acceptRun(valid string) {
 -->// error returns an error token and terminates the scan
 // by passing back a nil pointer that will be the next
 // state, terminating l.run.
-func (l *lexer) errorf(format string, args ...interface{}) stateFn {
+func (l *lexer) errorf(format string, args ...interface{})
+  stateFn {
     l.items &lt;- item{
         itemError,
         fmt.Sprintf(format, args...),
@@ -1114,13 +1119,42 @@ func (l *lexer) errorf(format string, args ...interface{}) stateFn {
         </div> <!-- end slide template -->
       <!-- end of slide 35 --><!-- start of slide 36 -->
         <div class="slide" id="slide-36">
+          <header>A problem</header>
+
+          <section>
+            <p>
+            Can&#39;t run a goroutine to completion during initialization.<br>
+            
+            Forbidden by the language specification.<br>
+            
+            (Raises awful issues about order of init, best avoided.)<br>
+            
+            <br>
+            
+            That means we can&#39;t lex &amp; parse a template during init.<br>
+            
+            <br>
+            
+            The goroutine is a problem....<br>
+            
+            <br>
+            </p>
+            
+
+
+          </section>
+        </div> <!-- end slide template -->
+      <!-- end of slide 36 --><!-- start of slide 37 -->
+        <div class="slide" id="slide-37">
           <header>Design vs. implementation</header>
 
           <section>
             <p>
-            The goroutine is a problem for initialization.<br>
+            ...but it&#39;s not necessary anyway.<br>
             
-            But it&#39;s not necessary anyway.<br>
+            <br>
+            
+            The work is done by the design; now we just adjust the API.<br>
             
             <br>
             
@@ -1137,8 +1171,8 @@ func (l *lexer) errorf(format string, args ...interface{}) stateFn {
 
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 36 --><!-- start of slide 37 -->
-        <div class="slide" id="slide-37">
+      <!-- end of slide 37 --><!-- start of slide 38 -->
+        <div class="slide" id="slide-38">
           <header>A new API</header>
 
           <section>
@@ -1166,8 +1200,8 @@ func lex(name, input string) *lexer {
 
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 37 --><!-- start of slide 38 -->
-        <div class="slide" id="slide-38">
+      <!-- end of slide 38 --><!-- start of slide 39 -->
+        <div class="slide" id="slide-39">
           <header>A function for the next item</header>
 
           <section>
@@ -1197,8 +1231,8 @@ func (l *lexer) nextItem() item {
 
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 38 --><!-- start of slide 39 -->
-        <div class="slide" id="slide-39">
+      <!-- end of slide 39 --><!-- start of slide 40 -->
+        <div class="slide" id="slide-40">
           <header>That&#39;s it</header>
 
           <section>
@@ -1224,8 +1258,8 @@ func (l *lexer) nextItem() item {
 
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 39 --><!-- start of slide 40 -->
-        <div class="slide" id="slide-40">
+      <!-- end of slide 40 --><!-- start of slide 41 -->
+        <div class="slide" id="slide-41">
           <header>Concurrency is a design approach</header>
 
           <section>
@@ -1251,8 +1285,8 @@ func (l *lexer) nextItem() item {
 
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 40 --><!-- start of slide 41 -->
-        <div class="slide" id="slide-41">
+      <!-- end of slide 41 --><!-- start of slide 42 -->
+        <div class="slide" id="slide-42">
           <header>Conclusion</header>
 
           <section>
@@ -1274,8 +1308,8 @@ func (l *lexer) nextItem() item {
 
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 41 --><!-- start of slide 42 -->
-        <div class="slide" id="slide-42">
+      <!-- end of slide 42 --><!-- start of slide 43 -->
+        <div class="slide" id="slide-43">
           <header>For more information</header>
 
           <section>
@@ -1297,7 +1331,13 @@ func (l *lexer) nextItem() item {
 
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 42 -->
+      <!-- end of slide 43 -->
+
+        <div class="slide" id="goodbye">
+          <section class="middle">
+            <hgroup><img src="http://golang.org/doc/gopher/bumper640x360.png"></hgroup>
+          </section>
+        </div>
 
       </div>
 

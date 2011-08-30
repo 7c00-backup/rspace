@@ -72,7 +72,7 @@ code lex/lex1.go /itemElse/ /^\)/
 
 * Printing a lex item
 
-Define a method String() string and Printf can print items without fuss.
+Printf has a convention making it easy to print any type: just define a String() method:
 
 code lex/lex1.go /func.*item.*String/ /^}/
 
@@ -261,10 +261,21 @@ Goroutines allow lexer and caller (parser) each to run at its own rate, as clean
 
 Channels give us a clean way to emit tokens.
 
+* A problem
+
+Can't run a goroutine to completion during initialization.
+Forbidden by the language specification.
+(Raises awful issues about order of init, best avoided.)
+
+That means we can't lex & parse a template during init.
+
+The goroutine is a problem....
+
 * Design vs. implementation
 
-The goroutine is a problem for initialization.
-But it's not necessary anyway.
+...but it's not necessary anyway.
+
+The work is done by the design; now we just adjust the API.
 
 We can change the API to hide the channel, provide a function to get the next token, and rewrite the run function.
 
