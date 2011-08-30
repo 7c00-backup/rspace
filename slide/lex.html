@@ -523,7 +523,7 @@ case state3:
 
           <section>
             <p>
-            State represents what we want to do next.<br>
+            State represents where we are and what we expect.<br>
             
             <br>
             
@@ -674,7 +674,7 @@ type lexer struct {
         input: input,
         items: make(chan item),
     }
-    go l.run()
+    go l.run()  // Concurrently run state machine.
     return l, l.items
 }
 </pre>
@@ -687,7 +687,7 @@ type lexer struct {
 
           <section>
             <p>
-            Here&#39;s the real state machine run function.<br>
+            Here&#39;s the real state machine run function, which runs as a goroutine.<br>
             
             <br>
             </p>

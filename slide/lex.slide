@@ -132,7 +132,7 @@ A tool can compile that out, but so can we.
 
 * What is a state? An action?
 
-State represents what we want to do next.
+State represents where we are and what we expect.
 
 Action represents what we do.
 
@@ -179,7 +179,7 @@ code lex/lex1.go /func.lex/ /^}/
 
 * The real run routine
 
-Here's the real state machine run function.
+Here's the real state machine run function, which runs as a goroutine.
 
 code lex/lex1.go /run.lexes/ /^}/
 

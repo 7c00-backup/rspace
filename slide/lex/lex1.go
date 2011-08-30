@@ -195,7 +195,7 @@ func lex(name, input string) (*lexer, chan item) {
 		input: input,
 		items: make(chan item),
 	}
-	go l.run()
+	go l.run()  // Concurrently run state machine.
 	return l, l.items
 }
 
