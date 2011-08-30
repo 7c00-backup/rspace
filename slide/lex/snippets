@@ -2,6 +2,7 @@ Evaluation: {{.Title}}
 Constants and functions: {{printf "%g: %#3X" 1.2+2i 123}}
 Control structures {{range $s.Text}} {{.}} {{end}}
 
+// One iteration:
 switch state {
 case state1: 
 	state = action1()

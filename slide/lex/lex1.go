@@ -15,8 +15,8 @@ import (
 
 // item represents a token returned from the scanner.
 type item struct {
-	typ itemType
-	val string
+	typ itemType  // Type, such as itemNumber.
+	val string    // Value, such as "23.2".
 }
 
 func (i item) String() string {
@@ -120,7 +120,7 @@ func (l *lexer) next() (rune int) {
 }
 
 // peek returns but does not consume
-//the next rune in the input.
+// the next rune in the input.
 func (l *lexer) peek() int {
 	rune := l.next()
 	l.backup()

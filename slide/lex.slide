@@ -113,9 +113,11 @@ Plus, most programming languages lex pretty much the same tokens, so once we lea
 Many people will tell you to write a switch statement,
 something like this:
 
-code lex/snippets /switch/ /^}/
+code lex/snippets /One/ /^}/
 
 * State machines are forgetful
+
+Boring and repetitive and error-prone, but anyway:
 
 Why switch?
 
@@ -140,7 +142,7 @@ Actions result in a new state.
 
 Let's put them together: a state function.
 
-Executes an action, returns the next state - as a state function.
+Executes an action, returns the next state—as a state function.
 
 Recursive definition but simple and clear.
 
@@ -173,7 +175,6 @@ code lex/lex1.go /lexer.holds/ /^}/
 A lexer initializes itself to lex a string and launches the state machine as a goroutine, returning the lexer itself and a channel of items.
 
 The API will change, don't worry about it now.
-
 code lex/lex1.go /func.lex/ /^}/
 
 * The real run routine

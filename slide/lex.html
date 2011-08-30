@@ -247,8 +247,8 @@ Control structures {{range $s.Text}} {{.}} {{end}}
 <!--{{code "lex/lex1.go" `/item.represents/` `/^}/`}}
 -->// item represents a token returned from the scanner.
 type item struct {
-    typ itemType
-    val string
+    typ itemType  // Type, such as itemNumber.
+    val string    // Value, such as &#34;23.2&#34;.
 }
 </pre>
 
@@ -460,8 +460,9 @@ type itemType int
 
 
 <pre>
-<!--{{code "lex/snippets" `/switch/` `/^}/`}}
--->switch state {
+<!--{{code "lex/snippets" `/One/` `/^}/`}}
+-->// One iteration:
+switch state {
 case state1: 
     state = action1()
 case state2:
@@ -479,6 +480,10 @@ case state3:
 
           <section>
             <p>
+            Boring and repetitive and error-prone, but anyway:<br>
+            
+            <br>
+            
             Why switch?<br>
             
             <br>
@@ -539,7 +544,7 @@ case state3:
             
             <br>
             
-            Executes an action, returns the next state - as a state function.<br>
+            Executes an action, returns the next state—as a state function.<br>
             
             <br>
             
@@ -997,7 +1002,7 @@ func (l *lexer) acceptRun(valid string) {
         </div> <!-- end slide template -->
       <!-- end of slide 31 --><!-- start of slide 32 -->
         <div class="slide" id="slide-32">
-          <header>Lexing a number, including floating point.</header>
+          <header>Lexing a number, including floating point</header>
 
           <section>
             <p></p>
