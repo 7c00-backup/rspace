@@ -21,7 +21,7 @@ import (
 	"resize"
 	"runtime/debug"
 	"strings"
-	"exp/template"
+	"template"
 	"time"
 	_ "image/png" // import so we can read PNG files.
 )
@@ -67,25 +67,25 @@ func init() {
 
 // Conversation is the type used to hold the conversations in the datastore.
 type Conversation struct {
-	Title string
+	Title      string
 	CreateTime datastore.Time
-	ModTime datastore.Time
-	ModUser string
-	Key string
-	Elem []*Elem // always empty in the data store. TODO: don't use this type
+	ModTime    datastore.Time
+	ModUser    string
+	Key        string
+	Elem       []*Elem // always empty in the data store. TODO: don't use this type
 }
 
 type ConversationView struct {
-	Conv *Conversation
+	Conv  *Conversation
 	Token string // identifies the channel
 }
 
 type Elem struct {
-	Text string
+	Text     string
 	ImageKey string
-	ConvKey string
-	Time datastore.Time
-	User string
+	ConvKey  string
+	Time     datastore.Time
+	User     string
 }
 
 // Display is called from the template to generate the HTML representing an Elem. 
@@ -124,7 +124,7 @@ func getUser(c appengine.Context) string {
 
 type Executor struct {
 	Title string
-	Data interface{}
+	Data  interface{}
 }
 
 // Viewers holds the channel client ids for the viewers of a conversation.
@@ -143,8 +143,8 @@ func (v *Viewers) Notify(c appengine.Context) {
 }
 
 func updateViewers(c appengine.Context, convKeyStringID string, f func(*Viewers)) os.Error {
-	convKey := datastore.NewKey("Conversation", convKeyStringID, 0, nil)
-	viewersKey := datastore.NewKey("Viewers", "viewers-"+convKeyStringID, 0, convKey)
+	convKey := datastore.NewKey(c, "Conversation", convKeyStringID, 0, nil)
+	viewersKey := datastore.NewKey(c, "Viewers", "viewers-"+convKeyStringID, 0, convKey)
 	var v Viewers
 	err := datastore.Get(c, viewersKey, &v)
 	if err != nil && err != datastore.ErrNoSuchEntity {
@@ -163,20 +163,20 @@ func viewerConnect(w http.ResponseWriter, r *http.Request) {
 func viewerDisconnect(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 	clientID := r.FormValue("from")
-	keyStringID := strings.Split(clientID, "/", -1)[0]
-c.Infof("disconnnect from %q key %q", clientID, keyStringID)
+	keyStringID := strings.Split(clientID, "/")[0]
+	c.Infof("disconnnect from %q key %q", clientID, keyStringID)
 	delViewer := func(c appengine.Context) os.Error {
-		return updateViewers(c, keyStringID, func(v *Viewers){
+		return updateViewers(c, keyStringID, func(v *Viewers) {
 			var nClient []string
 			for _, id := range v.Client {
 				if id != clientID {
 					nClient = append(nClient, id)
 				}
 			}
-			v.Client= nClient
+			v.Client = nClient
 		})
 	}
-	err := datastore.RunInTransaction(c, delViewer)
+	err := datastore.RunInTransaction(c, delViewer, nil)
 	if err != nil {
 		c.Errorf("error in viewerDisconnect: %v", err)
 		return
@@ -195,7 +195,7 @@ func root(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 	getUser(c)
 	if r.URL.RawPath != "/" {
-		http.Error(w, "no such page: " + r.URL.Path, 404)
+		http.Error(w, "no such page: "+r.URL.Path, 404)
 		return
 	}
 	// Get the list of conversations
@@ -221,22 +221,22 @@ func conversation(w http.ResponseWriter, r *http.Request) {
 	user := getUser(c)
 	keyString := r.FormValue("key")
 	listOnly := r.FormValue("listOnly") == "true"
-	key := datastore.NewKey("Conversation", keyString, 0, nil)
+	key := datastore.NewKey(c, "Conversation", keyString, 0, nil)
 	conv := getConv(c, key)
 	if listOnly {
 		renderList(w, conv)
 		return
 	}
 	// Channel nonsense
-	clientID := key.StringID()+"/"+user // TODO: probably want a better name
+	clientID := key.StringID() + "/" + user // TODO: probably want a better name
 	token, err := channel.Create(c, clientID)
 	check(err)
 	addViewer := func(c appengine.Context) os.Error {
-		return updateViewers(c, key.StringID(), func(v *Viewers){
-			v.Client= append(v.Client, clientID)
+		return updateViewers(c, key.StringID(), func(v *Viewers) {
+			v.Client = append(v.Client, clientID)
 		})
 	}
-	err = datastore.RunInTransaction(c, addViewer)
+	err = datastore.RunInTransaction(c, addViewer, nil)
 	check(err)
 	// end of channel nonsense
 	cview := &ConversationView{conv, token}
@@ -272,7 +272,7 @@ func newConversation(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 	user := getUser(c)
 	keyString := keyOf(title)
-	key := datastore.NewKey("Conversation", keyString, 0, nil)
+	key := datastore.NewKey(c, "Conversation", keyString, 0, nil)
 	conv := new(Conversation)
 	err := datastore.Get(c, key, conv)
 	if err == nil {
@@ -300,32 +300,32 @@ func newElem(w http.ResponseWriter, r *http.Request) {
 	renderList(w, conv)
 }
 
-func getConvKey(r *http.Request) *datastore.Key {
-	return datastore.NewKey("Conversation", r.FormValue("key"), 0, nil)
+func getConvKey(c appengine.Context, r *http.Request) *datastore.Key {
+	return datastore.NewKey(c, "Conversation", r.FormValue("key"), 0, nil)
 }
 
-func addElem(w http.ResponseWriter, r *http.Request, text string, imageKey string) (convKey *datastore.Key){
+func addElem(w http.ResponseWriter, r *http.Request, text string, imageKey string) (convKey *datastore.Key) {
 	if text == "" && imageKey == "" {
 		check(fmt.Errorf("nothing in conversation: TODO"))
 	}
 	c := appengine.NewContext(r)
 	user := getUser(c)
 	// Grab the conversation
-	convKey = getConvKey(r)
+	convKey = getConvKey(c, r)
 	conv := new(Conversation)
 	err := datastore.Get(c, convKey, conv)
 	check(err)
 	// Now store the element.
-	elemKeyString := keyOf(text+imageKey+fmt.Sprint(time.Nanoseconds()))
+	elemKeyString := keyOf(text + imageKey + fmt.Sprint(time.Nanoseconds()))
 	// use convKey as the parent key to be available as the ancestor data for the query
-	elemKey := datastore.NewKey("Elem", elemKeyString, 0, convKey)
+	elemKey := datastore.NewKey(c, "Elem", elemKeyString, 0, convKey)
 	modTime := datastore.SecondsToTime(time.Seconds())
 	elem := &Elem{
-		Text: text,
+		Text:     text,
 		ImageKey: imageKey,
-		ConvKey: convKey.StringID(),
-		Time: modTime,
-		User: user,
+		ConvKey:  convKey.StringID(),
+		Time:     modTime,
+		User:     user,
 	}
 	_, err = datastore.Put(c, elemKey, elem)
 	check(err)
@@ -337,7 +337,7 @@ func addElem(w http.ResponseWriter, r *http.Request, text string, imageKey strin
 	check(err)
 
 	// Send updates to all viewers.
-	viewersKey := datastore.NewKey("Viewers", "viewers-"+convKey.StringID(), 0, convKey)
+	viewersKey := datastore.NewKey(c, "Viewers", "viewers-"+convKey.StringID(), 0, convKey)
 	v := new(Viewers)
 	err = datastore.Get(c, viewersKey, v)
 	check(err)
@@ -405,7 +405,7 @@ func upload(w http.ResponseWriter, r *http.Request) {
 
 	// Save the image under a unique key, a hash of the image.
 	keyString := keyOf(buf.String())
-	key := datastore.NewKey("Image", keyString, 0, nil) // TODO: should nil be getConvKey(r)?
+	key := datastore.NewKey(c, "Image", keyString, 0, nil) // TODO: should nil be getConvKey(r)?
 	_, err = datastore.Put(c, key, &Image{buf.Bytes()})
 	check(err)
 
@@ -426,7 +426,7 @@ func keyOf(data string) string {
 // it handles "/img".
 func img(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
-	key := datastore.NewKey("Image", r.FormValue("key"), 0, nil)
+	key := datastore.NewKey(c, "Image", r.FormValue("key"), 0, nil)
 	im := new(Image)
 	err := datastore.Get(c, key, im)
 	// We should make the Put of the image and the Get here be in a
@@ -447,13 +447,13 @@ func img(w http.ResponseWriter, r *http.Request) {
 
 func timeFormatter(dt datastore.Time) string {
 	now := time.Seconds()
-	then := int64(dt)/1e6 // datastore times are in microseconds
+	then := int64(dt) / 1e6 // datastore times are in microseconds
 	t := time.SecondsToLocalTime(then)
 	format := "Jan 06 3:04PM"
 	switch {
-	case now - then < 12*3600:
+	case now-then < 12*3600:
 		format = "3:04PM"
-	case now - then < 7*24*3600:
+	case now-then < 7*24*3600:
 		format = "Mon 3:04PM"
 	}
 	return fmt.Sprintf("@%s", t.Format(format))

@@ -96,19 +96,11 @@ func Resize(m image.Image, r image.Rectangle, w, h int) image.Image {
 	return average(sum, w, h, n*0x0101)
 }
 
-// average convert the sums to averages and returns the result.
+// average converts the sums to averages and returns the result.
 func average(sum []uint64, w, h int, n uint64) image.Image {
 	ret := image.NewRGBA(w, h)
-	for y := 0; y < h; y++ {
-		for x := 0; x < w; x++ {
-			index := 4 * (y*w + x)
-			ret.Pix[y*ret.Stride+x] = image.RGBAColor{
-				uint8(sum[index+0] / n),
-				uint8(sum[index+1] / n),
-				uint8(sum[index+2] / n),
-				uint8(sum[index+3] / n),
-			}
-		}
+	for i := range sum {
+		ret.Pix[i] = uint8(sum[i] / n)
 	}
 	return ret
 }
@@ -182,11 +174,11 @@ func resizeRGBA(m *image.RGBA, r image.Rectangle, w, h int) image.Image {
 		pix := m.Pix[y*m.Stride:]
 		for x := r.Min.X; x < r.Max.X; x++ {
 			// Get the source pixel.
-			p := pix[x]
-			r64 := uint64(p.R)
-			g64 := uint64(p.G)
-			b64 := uint64(p.B)
-			a64 := uint64(p.A)
+			i := (x-m.Rect.Min.X)*4
+			r64 := uint64(pix[i+0])
+			g64 := uint64(pix[i+1])
+			b64 := uint64(pix[i+2])
+			a64 := uint64(pix[i+3])
 			// Spread the source pixel over 1 or more destination rows.
 			py := uint64(y) * hh
 			for remy := hh; remy > 0; {
