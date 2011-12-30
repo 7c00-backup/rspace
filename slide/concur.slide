@@ -8,7 +8,7 @@ Aug 30, 2011
 
 * Test image
 
-image "images/betsy.jpg" 100 200
+image images/betsy.jpg 100 200
 
 * Structural mismatch
 

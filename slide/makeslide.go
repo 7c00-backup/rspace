@@ -29,6 +29,7 @@ After that come slides, each after a blank line:
 
 	code x.go
 	code y.go
+	slide image.jpg
 
 Blank lines are OK (not mandatory) after the title and after the text.
 Text, bullets, and code are all optional; title is not.
@@ -40,7 +41,7 @@ source into the output by extracting code from files and
 injecting them as HTML-escaped <pre> blocks.
 
 The syntax is simple: 1, 2, or 3 space-separated arguments.
-The first argument is always the file names.
+The first argument is always the file name.
 The remainder are /-delimited patterns, decimal line numbers,
 or $ to represent the end of the file.  No quotes and remember
 the args are blank-seprated, so you might want to use . to
@@ -55,6 +56,15 @@ code foo.go /^func.main/ /^}/
 
 Patterns can be `/regular expression/`, a decimal number, or "$"
 to signify the end of the file.
+
+The template uses the function "image" to inject picture files.
+
+The syntax is simple: 1 or 3 space-separated arguments.
+The first argument is always the file name.
+If there are more arguments, they are the height and width;
+both must be present.
+
+image images/betsy.jpg 100 200
 
 */
 package main
@@ -365,7 +375,7 @@ func image(file string, arg []interface{}) (string, error) {
 	default:
 		return "", fmt.Errorf("incorrect image invocation: code %q %v", file, arg)
 	}
-	return fmt.Sprintf(`<!--{{%s}}\n--><img src=%s %s>`, command, file, args), nil
+	return fmt.Sprintf(`<!--{{%s}}\n--><img src=%q %s>`, command, file, args), nil
 }
 
 // parseArg returns the integer or string value of the argument and tells which it is.
