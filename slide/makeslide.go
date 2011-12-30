@@ -68,7 +68,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"template"
+	"text/template"
 )
 
 func Usage() {
@@ -80,6 +80,11 @@ func Usage() {
 var templateFile = flag.String("template", "slide.tmpl", "file containing template definitions")
 var html = flag.Bool("html", true, "print slides as HTML not plain text")
 var start = flag.Int("start", 0, "first slide to print")
+
+var funcs = template.FuncMap{
+	"code": code,
+	"image": image,
+}
 
 func main() {
 	flag.Usage = Usage
@@ -96,9 +101,9 @@ func main() {
 
 	// Read and parse the input.
 	name := *templateFile
-	tmpl := template.New(name).Funcs(template.FuncMap{"code": code})
+	tmpl := template.New(name).Funcs(funcs)
 	if *html {
-		if _, err := tmpl.ParseFile(name); err != nil {
+		if _, err := tmpl.ParseFiles(name); err != nil {
 			log.Fatal(err)
 		}
 	} else {
@@ -122,14 +127,20 @@ type Pres struct {
 }
 
 type Slide struct {
-	Number   int
-	Title    string
-	Text     []string
-	Bullets  []string
-	Code []Code
+	Number  int
+	Title   string
+	Text    []string
+	Bullets []string
+	Code    []Code
+	Image    []Image
 }
 
 type Code struct {
+	File string
+	Args []interface{}
+}
+
+type Image struct {
 	File string
 	Args []interface{}
 }
@@ -179,6 +190,8 @@ func (l *Lines) nextNonEmpty() (text string, ok bool) {
 	return
 }
 
+var actionRE = regexp.MustCompile(`^(- |code|image|\*)`)
+
 func parse(name string) *Pres {
 	pres := new(Pres)
 	lines := readLines(name)
@@ -212,12 +225,12 @@ func parse(name string) *Pres {
 			break
 		}
 		if !strings.HasPrefix(text, "* ") {
-				log.Fatalf("%s:%d bad title %q", name, lines.line, text)
+			log.Fatalf("%s:%d bad title %q", name, lines.line, text)
 		}
 		slide.Title = text[2:]
 		// Next non-empty line is first line of text.
 		text, ok = lines.nextNonEmpty()
-		for ok && !strings.HasPrefix(text, "- ") && !strings.HasPrefix(text, "code") && !strings.HasPrefix(text, "* "){
+		for ok && !actionRE.MatchString(text) {
 			slide.Text = append(slide.Text, text)
 			text, ok = lines.next()
 		}
@@ -228,13 +241,21 @@ func parse(name string) *Pres {
 		for ok && text == "" {
 			text, ok = lines.next()
 		}
-		for ok && strings.HasPrefix(text, "code ") {
+		for ok && (strings.HasPrefix(text, "code ") || strings.HasPrefix(text , "image")) {
 			args := strings.Fields(text)
-			if len(args) < 2 || args[0] != "code" {
-				log.Fatalf("%s:%d bad code invocation syntax %q", name, lines.line, text)
+			if len(args) < 2 {
+				log.Fatalf("%s:%d bad action invocation syntax %q", name, lines.line, text)
 			}
-			slide.Code = append(slide.Code, Code{args[1], parseArgs(name, lines.line, args[2:])})
-			text, ok = lines.next()
+			switch args[0] {
+			case "code":
+				slide.Code = append(slide.Code, Code{args[1], parseArgs(name, lines.line, args[2:])})
+				text, ok = lines.next()
+			case "image":
+				slide.Image = append(slide.Image, Image{args[1], parseArgs(name, lines.line, args[2:])})
+				text, ok = lines.next()
+			default:
+				log.Fatalf("%s:%d unrecognized action %q", name, lines.line, text)
+			}
 		}
 		if strings.HasPrefix(text, "* ") {
 			lines.back()
@@ -298,7 +319,7 @@ func format(arg interface{}) string {
 	return ""
 }
 
-func code(file string, arg []interface{}) (string, os.Error) {
+func code(file string, arg []interface{}) (string, error) {
 	text := contents(file)
 	var command string
 	switch len(arg) {
@@ -314,7 +335,7 @@ func code(file string, arg []interface{}) (string, os.Error) {
 		command = fmt.Sprintf("code %q %s %s", file, format(arg[0]), format(arg[1]))
 		text = multipleLines(file, text, arg[0], arg[1])
 	default:
-		return "", fmt.Errorf("incorrect code invocation: code %q %q", file, arg)
+		return "", fmt.Errorf("incorrect code invocation: code %q %v", file, arg)
 	}
 	// Replace tabs by spaces, which work better in HTML.
 	text = strings.Replace(text, "\t", "    ", -1)
@@ -329,6 +350,22 @@ func code(file string, arg []interface{}) (string, os.Error) {
 		text = fmt.Sprintf("// %s\n%s", command, text)
 	}
 	return text, nil
+}
+
+func image(file string, arg []interface{}) (string, error) {
+	var command string
+	args := ""
+	switch len(arg) {
+	case 0:
+		// no size parameters
+		command = fmt.Sprintf("image %q", file)
+	case 2:
+		command = fmt.Sprintf("image %q %v %v", file, format(arg[0]), format(arg[1]))
+		args = fmt.Sprintf("height=%s width=%s", format(arg[0]), format(arg[1]))
+	default:
+		return "", fmt.Errorf("incorrect image invocation: code %q %v", file, arg)
+	}
+	return fmt.Sprintf(`<!--{{%s}}\n--><img src=%s %s>`, command, file, args), nil
 }
 
 // parseArg returns the integer or string value of the argument and tells which it is.

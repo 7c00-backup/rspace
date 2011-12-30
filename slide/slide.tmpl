@@ -114,6 +114,9 @@
 <pre>
 {{code .File .Args}}</pre>
 {{end}}
+{{range $s.Image}}
+{{image .File .Args}}
+{{end}}
           </section>
         </div> <!-- end slide template -->
       <!-- end of slide {{$i}} -->{{end}}{{/* of Slide block */}}
