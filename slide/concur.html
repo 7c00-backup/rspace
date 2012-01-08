@@ -104,7 +104,204 @@
 
 	<!-- start of slide 0 -->
         <div class="slide" id="slide-0">
-          <header>Test image</header>
+          <header>Go supports concurrency</header>
+
+          <section>
+            <p>
+            Go provides:<br>
+            </p>
+            
+            <ul>
+            
+            <li>concurrent execution (goroutines)</li>
+            
+            <li>synchronization and messaging (channels)</li>
+            
+            <li>multi-way concurrent control (select)</li>
+            
+            </ul>
+            
+
+
+
+          </section>
+        </div> <!-- end slide template -->
+      <!-- end of slide 0 --><!-- start of slide 1 -->
+        <div class="slide" id="slide-1">
+          <header>Goroutines</header>
+
+          <section>
+            <p>
+            A goroutine is a function running independently  in the same address space.<br>
+            
+            <br>
+            </p>
+            
+
+
+<pre>
+<!--{{code "concur/snippets" `/starts.running/` `/return/`}}
+-->go f(&#34;hello&#34;, &#34;world&#34;) // f starts running
+g() // does not wait for f to return
+</pre>
+
+
+          </section>
+        </div> <!-- end slide template -->
+      <!-- end of slide 1 --><!-- start of slide 2 -->
+        <div class="slide" id="slide-2">
+          <header>Channels</header>
+
+          <section>
+            <p>
+            Channels are typed values that allow goroutines to synchronize and exchange information.<br>
+            
+            <br>
+            </p>
+            
+
+
+<pre>
+<!--{{code "concur/snippets" `/make.*chan/` `/completedAt/`}}
+-->timerChan := make(chan time.Time)
+go func() {
+    time.Sleep(deltaT)
+    timerChan &lt;- time.Now() // send time on timerChan
+}()
+// Do something else; when ready:
+completedAt := &lt;-timerChan // receive completion time
+</pre>
+
+
+          </section>
+        </div> <!-- end slide template -->
+      <!-- end of slide 2 --><!-- start of slide 3 -->
+        <div class="slide" id="slide-3">
+          <header>Select</header>
+
+          <section>
+            <p>
+            The select statement is like a switch, but the decision is based on ability to communicate rather than just equal values.<br>
+            
+            <br>
+            </p>
+            
+
+
+<pre>
+<!--{{code "concur/snippets" `/select/` `/}/`}}
+-->select {
+case v := &lt;-ch1:
+    fmt.Println(&#34;channel 1 sends&#34;, v)
+case v := &lt;-ch2:
+    fmt.Println(&#34;channel 2 sends&#34;, v)
+default: // optional
+    fmt.Println(&#34;neither channel was ready&#34;)
+}
+</pre>
+
+
+          </section>
+        </div> <!-- end slide template -->
+      <!-- end of slide 3 --><!-- start of slide 4 -->
+        <div class="slide" id="slide-4">
+          <header>Go really supports concurrency</header>
+
+          <section>
+            <p>
+            It&#39;s routine to have thousands of goroutines active in a program.<br>
+            
+            <br>
+            
+            Stacks start small, but grow and shrink as required.<br>
+            
+            <br>
+            
+            Goroutines aren&#39;t free, but they&#39;re very cheap.<br>
+            
+            <br>
+            </p>
+            
+
+
+
+          </section>
+        </div> <!-- end slide template -->
+      <!-- end of slide 4 --><!-- start of slide 5 -->
+        <div class="slide" id="slide-5">
+          <header>Goroutines are not threads </header>
+
+          <section>
+            <p>
+            They&#39;re much cheaper.<br>
+            
+            <br>
+            
+            Goroutines are multiplexed onto threads as required.<br>
+            
+            <br>
+            
+            When a goroutine blocks, that thread blocks but other goroutines do not.<br>
+            
+            <br>
+            </p>
+            
+
+
+
+          </section>
+        </div> <!-- end slide template -->
+      <!-- end of slide 5 --><!-- start of slide 6 -->
+        <div class="slide" id="slide-6">
+          <header>Concurrency is cool! Yay parallelism!!</header>
+
+          <section>
+            <p>
+            NO! A fallacy.<br>
+            
+            <br>
+            
+            When Go was announced, many were confused by the distinction.<br>
+            
+            <br>
+            
+            &#34;I ran the prime sieve with 4 processors and it got slower!&#34;<br>
+            
+            <br>
+            </p>
+            
+
+
+
+          </section>
+        </div> <!-- end slide template -->
+      <!-- end of slide 6 --><!-- start of slide 7 -->
+        <div class="slide" id="slide-7">
+          <header>Concurrency is not parallelism</header>
+
+          <section>
+            <p>
+            Concurrency is a way to structure a program by breaking it into pieces that can be executed independently.<br>
+            
+            <br>
+            
+            Hoare: Communicating Sequential Processes (CSP).<br>
+            
+            <br>
+            
+            Concurrency can enable parallelism, but it does not require it.<br>
+            
+            <br>
+            </p>
+            
+
+
+
+          </section>
+        </div> <!-- end slide template -->
+      <!-- end of slide 7 --><!-- start of slide 8 -->
+        <div class="slide" id="slide-8">
+          <header>Events vs. threads</header>
 
           <section>
             <p></p>
@@ -112,11 +309,197 @@
 
 
 
-<img src="images/betsy.jpg" height=100 width=200>
+          </section>
+        </div> <!-- end slide template -->
+      <!-- end of slide 8 --><!-- start of slide 9 -->
+        <div class="slide" id="slide-9">
+          <header>Gophers gophers gophers</header>
+
+          <section>
+            <p></p>
+            
+
+
 
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 0 -->
+      <!-- end of slide 9 --><!-- start of slide 10 -->
+        <div class="slide" id="slide-10">
+          <header>Closures are part of the story</header>
+
+          <section>
+            <p>
+            Closures are just local functions.<br>
+            </p>
+            
+
+
+<pre>
+<!--{{code "concur/snippets" `/Compose/` `/sin,/`}}
+-->func Compose(f, g func(x float) float)
+                  func(x float) float {
+     return func(x float) float {
+        return f(g(x))
+    }
+}
+
+print(Compose(sin, cos)(0.5))
+</pre>
+
+
+          </section>
+        </div> <!-- end slide template -->
+      <!-- end of slide 10 --><!-- start of slide 11 -->
+        <div class="slide" id="slide-11">
+          <header>Launching daemons</header>
+
+          <section>
+            <p>
+            Use a closure to wrap a background operation.<br>
+            
+            <br>
+            
+            The for range operation runs until channel is drained.<br>
+            </p>
+            
+
+
+<pre>
+<!--{{code "concur/snippets" `/copy.input/` `/^}/`}}
+-->go func() { // copy input to output
+    for val := range input {
+        output &lt;- val
+    }
+}
+</pre>
+
+
+          </section>
+        </div> <!-- end slide template -->
+      <!-- end of slide 11 --><!-- start of slide 12 -->
+        <div class="slide" id="slide-12">
+          <header>A simple load balancer (1)</header>
+
+          <section>
+            <p>
+            A unit of work:<br>
+            
+            <br>
+            </p>
+            
+
+
+<pre>
+<!--{{code "concur/load1" `/type/` `/^}/`}}
+-->type Work struct {
+    x, y, z int
+}
+</pre>
+
+
+          </section>
+        </div> <!-- end slide template -->
+      <!-- end of slide 12 --><!-- start of slide 13 -->
+        <div class="slide" id="slide-13">
+          <header>A simple load balancer (2)</header>
+
+          <section>
+            <p>
+            A worker task:<br>
+            
+            <br>
+            </p>
+            
+
+
+<pre>
+<!--{{code "concur/load1" `/worker/` `/^}/`}}
+-->func worker(in &lt;-chan *Work, out chan &lt;- *Work) {
+   for w := range in {
+      w.z = w.x * w.y
+      out &lt;- w
+   }
+}
+</pre>
+
+
+          </section>
+        </div> <!-- end slide template -->
+      <!-- end of slide 13 --><!-- start of slide 14 -->
+        <div class="slide" id="slide-14">
+          <header>A simple load balancer (3)</header>
+
+          <section>
+            <p>
+            The runner:<br>
+            
+            <br>
+            </p>
+            
+
+
+<pre>
+<!--{{code "concur/load1" `/Run/` `/^}/`}}
+-->func Run() {
+   in, out := make(chan *Work), make(chan *Work)
+   for i := 0; i &lt; 10; i++ {
+       go worker(in, out)
+   }
+   go sendLotsOfWork(in)
+   receiveLotsOfResults(out)
+}
+</pre>
+
+
+          </section>
+        </div> <!-- end slide template -->
+      <!-- end of slide 14 --><!-- start of slide 15 -->
+        <div class="slide" id="slide-15">
+          <header>Concurrency enables parallelism</header>
+
+          <section>
+            <p>
+            The load balancer is implicitly parallel and scalable.<br>
+            
+            <br>
+            </p>
+            
+
+
+
+          </section>
+        </div> <!-- end slide template -->
+      <!-- end of slide 15 --><!-- start of slide 16 -->
+        <div class="slide" id="slide-16">
+          <header>Concurrency simplifies synchronization</header>
+
+          <section>
+            <p>
+            No explicit synchronization needed.<br>
+            
+            <br>
+            
+            The structure of the program is implicitly synchronized.<br>
+            
+            <br>
+            
+            <br>
+            
+            <br>
+            
+            <br>
+            
+            <br>
+            
+            <br>
+            </p>
+            
+
+
+
+          </section>
+        </div> <!-- end slide template -->
+      <!-- end of slide 16 -->
 
         <div class="slide" id="goodbye">
           <section class="middle">
