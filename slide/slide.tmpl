@@ -85,7 +85,9 @@
           <section class="middle">
             <hgroup>
               <h1>
-                {{html .Title}}
+                {{range .Title}}
+                  {{html .}}<br>
+                {{end}}
               </h1>
               <h2>
                 {{range .Info}}{{html .}}<br>{{end}}

@@ -1,10 +1,14 @@
 # This is a file.
 
-Lexical Scanning in Go
+Concurrency
+is not
+Parallelism
+(it's better)
+
 Rob Pike
 r@golang.org
-GTUG Sydney
-Aug 30, 2011
+Waza
+Jan 11, 2012
 
 * Test image
 

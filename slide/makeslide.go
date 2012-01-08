@@ -8,6 +8,8 @@ Slide files have the following format.  The first non-blank non-comment
 line is the title, so the header looks like
 
 	Title of presentation
+	Which may be multiple lines
+	<blank line>
 	Several lines of
 	Text such as the Author,
 	Date,
@@ -131,7 +133,7 @@ func main() {
 // Slide parsing.
 
 type Pres struct {
-	Title string
+	Title []string
 	Info  []string
 	Slide []Slide
 }
@@ -206,12 +208,24 @@ func parse(name string) *Pres {
 	pres := new(Pres)
 	lines := readLines(name)
 	var ok bool
-	// First non-empty line is title.
-	pres.Title, ok = lines.nextNonEmpty()
+	// First non-empty line starts title.
+	text, ok := lines.nextNonEmpty()
 	if !ok {
 		log.Fatalf("no title")
 	}
-	// Suck up info.
+	pres.Title = append(pres.Title, text)
+	// Suck up rest of title.
+	for {
+		text, ok := lines.next()
+		if !ok {
+			log.Fatal("missing info")
+		}
+		if text == "" {
+			break
+		}
+		pres.Title = append(pres.Title, text)
+	}
+	// Suck up rest of title slide.
 	for {
 		text, ok := lines.next()
 		if !ok {
@@ -363,19 +377,16 @@ func code(file string, arg []interface{}) (string, error) {
 }
 
 func image(file string, arg []interface{}) (string, error) {
-	var command string
 	args := ""
 	switch len(arg) {
 	case 0:
 		// no size parameters
-		command = fmt.Sprintf("image %q", file)
 	case 2:
-		command = fmt.Sprintf("image %q %v %v", file, format(arg[0]), format(arg[1]))
 		args = fmt.Sprintf("height=%s width=%s", format(arg[0]), format(arg[1]))
 	default:
 		return "", fmt.Errorf("incorrect image invocation: code %q %v", file, arg)
 	}
-	return fmt.Sprintf(`<!--{{%s}}\n--><img src=%q %s>`, command, file, args), nil
+	return fmt.Sprintf(`<img src=%q %s>`, file, args), nil
 }
 
 // parseArg returns the integer or string value of the argument and tells which it is.
