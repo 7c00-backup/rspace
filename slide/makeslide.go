@@ -459,7 +459,8 @@ func match(file string, start int, lines []string, pattern string) int {
 }
 
 const textTemplate = `
-{{.Title}}
+{{range .Title}}{{.}}
+{{end}}
 
 {{range .Info}}{{.}}
 {{end}}
