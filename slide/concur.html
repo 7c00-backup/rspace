@@ -486,12 +486,6 @@ print(Compose(sin, cos)(0.5))
             <br>
             
             <br>
-            
-            <br>
-            
-            <br>
-            
-            <br>
             </p>
             
 
@@ -499,7 +493,39 @@ print(Compose(sin, cos)(0.5))
 
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 16 -->
+      <!-- end of slide 16 --><!-- start of slide 17 -->
+        <div class="slide" id="slide-17">
+          <header>Database multi-way request</header>
+
+          <section>
+            <p>
+            Query servers in replicated database, return first response.<br>
+            </p>
+            
+
+
+<pre>
+<!--{{code "concur/snippets" `/Query/` `/^}/`}}
+-->func Query(conns []Conn, query string) Result {
+    ch := make(chan Result, 1)  // buffer of 1 item
+    for _, conn := range conns {
+      go func(c Conn) {
+        select {
+          case ch &lt;- c.DoQuery(query):
+            // nothing to do
+          default: // executes if ch is blocked
+            // nothing to do
+        }
+      }(conn)
+    }
+    return &lt;-ch
+}
+</pre>
+
+
+          </section>
+        </div> <!-- end slide template -->
+      <!-- end of slide 17 -->
 
         <div class="slide" id="goodbye">
           <section class="middle">

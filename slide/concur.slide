@@ -116,11 +116,11 @@ The structure of the program is implicitly synchronized.
 ###events, threads, etc.
 ###load balancer? web server?
 ###database mux
-##
-##* Database multi-way request
 
-#Query servers in replicated database, return first response.
-#code concur/snippets /Query/ /^}/
+* Database multi-way request
+
+Query servers in replicated database, return first response.
+code concur/snippets /Query/ /^}/
 
 
 #* Go does not directly support parallelism
