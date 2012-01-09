@@ -71,6 +71,47 @@ Concurrency can enable parallelism, but it does not require it.
 
 * Gophers gophers gophers
 
+* gophersimple1
+
+image concur/gophersimple1.jpg
+
+* gophersimple2
+
+image concur/gophersimple2.jpg
+
+* gophersimple3
+
+image concur/gophersimple3.jpg
+
+* gophersimple4
+
+image concur/gophersimple4.jpg
+
+* gophercomplex1
+
+image concur/gophercomplex1.jpg
+
+* gophercomplex2
+
+image concur/gophercomplex2.jpg
+
+* gophercomplex3
+
+image concur/gophercomplex3.jpg
+
+* gophercomplex4
+
+image concur/gophercomplex4.jpg
+
+* gophercomplex5
+
+image concur/gophercomplex5.jpg
+
+* gophercomplex6
+
+image concur/gophercomplex6.jpg
+
+
 * Closures are part of the story
 
 Closures are just local functions.
