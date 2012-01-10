@@ -119,6 +119,9 @@
 {{range $s.Image}}
 {{image .File .Args}}
 {{end}}
+            <p>{{range $s.BottomText}}
+            {{html .}}<br>
+            {{end}}
           </section>
         </div> <!-- end slide template -->
       <!-- end of slide {{$i}} -->{{end}}{{/* of Slide block */}}

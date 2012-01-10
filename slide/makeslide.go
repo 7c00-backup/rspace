@@ -145,6 +145,7 @@ type Slide struct {
 	Bullets []string
 	Code    []Code
 	Image    []Image
+	BottomText    []string
 }
 
 type Code struct {
@@ -281,6 +282,11 @@ func parse(name string) *Pres {
 				log.Fatalf("%s:%d unrecognized action %q", name, lines.line, text)
 			}
 		}
+		for ok && !actionRE.MatchString(text) {
+			slide.BottomText = append(slide.BottomText, text)
+			text, ok = lines.next()
+		}
+
 		if strings.HasPrefix(text, "* ") {
 			lines.back()
 		}
@@ -471,4 +477,5 @@ const textTemplate = `
 {{range $s.Text}}{{.}}
 {{end}}{{if $s.Bullets}}{{range $s.Bullets}}* {{.}}
 {{end}}{{end}}
-{{range $s.Code}}{{code .File .Args}}{{end}}{{end}}`
+{{range $s.Code}}{{code .File .Args}}{{end}}{{end}}
+{{range $s.BottomText}}{{.}}`

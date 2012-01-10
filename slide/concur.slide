@@ -10,12 +10,179 @@ r@golang.org
 Waza
 Jan 11, 2012
 
+* The modern world is parallel
+
+Multicore.
+
+Networks.
+
+Clouds of CPUs.
+
+Loads of users.
+
+Our technology should help.
+That's where concurrency comes in.
+
 * Go supports concurrency
 
 Go provides:
 - concurrent execution (goroutines)
 - synchronization and messaging (channels)
 - multi-way concurrent control (select)
+
+* Concurrency is cool! Yay parallelism!!
+
+NO! A fallacy.
+
+When Go was announced, many were confused by the distinction.
+
+"I ran the prime sieve with 4 processors and it got slower!"
+
+* Concurrency
+
+Programming as the composition of independently executing processes.
+
+(Processes in the general sense, not Linux processes. Famously hard to define.)
+
+* Parallelism
+
+Programming as the simultaneous execution of (possibly related) computations.
+
+* Concurrency vs. parallelism
+
+Programming as the composition of independently executing processes.
+
+vs.
+
+Programming as the simultaneous execution of (possibly related) computations.
+
+Not obviously the same. One is about structure, one is about execution.
+
+Concurrency provides a way to structure a solution to solve a problem that may (but not necessarily) be parallelizable.
+
+* Concurrency
+
+Concurrency is a way to structure a program by breaking it into pieces that can be executed independently.
+
+Go's model (as in many languages) is based on CSP:
+
+Hoare: Communicating Sequential Processes
+
+* An analogy
+
+Concurrent: Mouse, keyboard, display, and disk drivers.
+
+Parallel: Vector dot product.
+
+* Gophers
+
+This is too abstract. Let's get concrete.
+
+* Our problem
+
+image concur/gophersimple1.jpg
+
+Only one gopher will take too long.
+
+* More gophers!
+
+image concur/gophersimple3.jpg
+
+More gophers are not enough; they need more carts.
+
+* More gophers and more carts
+
+image concur/gophersimple2.jpg
+
+This will go faster, but there will be bottlenecks at the pile and incinerator.
+
+* Double everything
+
+image concur/gophersimple4.jpg
+
+This will consume books twice as fast.
+
+* Concurrent composition
+
+image concur/gophersimple4.jpg
+
+The concurrent composition of two gopher procedures.
+
+* Concurrent composition.
+
+Our solution is not automatically parallel:
+What if only one gopher is moving at a time?
+Then it's concurrent, but not parallel.
+
+But the concurrent composition suggests other models.
+
+* Another design
+
+image concur/gophercomplex1.jpg
+
+Four gophers in action.
+
+If we arrange everything right (implausible but not impossible), that's four times faster.
+
+* Concurrent procedures
+
+Four distinct gopher procedures:
+- load
+- carry
+- burn
+- return empty
+
+A different concurrent design, a different way to parallelize.
+
+* More parallelization!
+
+We can now parallelize on the other axis; the concurrent design makes it easy. Eight gophers on the move.
+image concur/gophercomplex2.jpg
+
+* Another design
+
+Here's another way to structure the problem as the concurrent composition of gopher procedures.
+Two gopher procedures, plus a staging pile.
+
+image concur/gophercomplex3.jpg
+
+* Parallelize the usual way
+
+image concur/gophercomplex4.jpg
+
+* Or a different way
+
+Bring the staging pile to the complex model
+
+image concur/gophercomplex5.jpg
+
+* Full on optimization
+
+Use all our techniques. Sixteen gophers hard at work!
+
+image concur/gophercomplex6.jpg
+
+* Lesson
+
+There are many ways to break the processing down.
+
+That's concurrent design.
+
+Once we have the breakdown, parallelization might fall out.
+
+* Back to Computing
+
+In our book transport problem, substitute:
+- book pile for web content
+- gopher for CPU
+- cart for marshaling, rendering
+- incinerator for proxy, browser, or other consumer
+
+It's a web service, and we have concurrent design.
+
+* A little background about Go
+
+Not the place for a tutorial, just quick highlights.
 
 * Goroutines
 
@@ -45,77 +212,18 @@ Goroutines aren't free, but they're very cheap.
 
 * Goroutines are not threads 
 
-They're much cheaper.
+(They're much cheaper.)
 
 Goroutines are multiplexed onto threads as required.
 
 When a goroutine blocks, that thread blocks but other goroutines do not.
 
-* Concurrency is cool! Yay parallelism!!
-
-NO! A fallacy.
-
-When Go was announced, many were confused by the distinction.
-
-"I ran the prime sieve with 4 processors and it got slower!"
-
-* Concurrency is not parallelism
-
-Concurrency is a way to structure a program by breaking it into pieces that can be executed independently.
-
-Hoare: Communicating Sequential Processes (CSP).
-
-Concurrency can enable parallelism, but it does not require it.
-
-* Events vs. threads
-
-* Gophers gophers gophers
-
-* gophersimple1
-
-image concur/gophersimple1.jpg
-
-* gophersimple2
-
-image concur/gophersimple2.jpg
-
-* gophersimple3
-
-image concur/gophersimple3.jpg
-
-* gophersimple4
-
-image concur/gophersimple4.jpg
-
-* gophercomplex1
-
-image concur/gophercomplex1.jpg
-
-* gophercomplex2
-
-image concur/gophercomplex2.jpg
-
-* gophercomplex3
-
-image concur/gophercomplex3.jpg
-
-* gophercomplex4
-
-image concur/gophercomplex4.jpg
-
-* gophercomplex5
-
-image concur/gophercomplex5.jpg
-
-* gophercomplex6
-
-image concur/gophercomplex6.jpg
-
-
 * Closures are part of the story
 
 Closures are just local functions.
 code concur/snippets /Compose/ /sin,/
+
+* Some examples
 
 * Launching daemons
 
@@ -142,10 +250,11 @@ The runner:
 
 code concur/load1 /Run/ /^}/
 
-
 * Concurrency enables parallelism
 
 The load balancer is implicitly parallel and scalable.
+
+The tools of concurrency make it almost trivial to build a safe, working, scalable, parallel design.
 
 * Concurrency simplifies synchronization
 
@@ -153,10 +262,81 @@ No explicit synchronization needed.
 
 The structure of the program is implicitly synchronized.
 
+* That was too easy
 
-###events, threads, etc.
-###load balancer? web server?
-###database mux
+Let's do a more realistic load balancer.
+
+* Load balancer
+
+image concur/gopherchart.jpg
+
+* Request definition
+
+The requester sends Requests to the balancer.
+
+code concur/load2 /^type.Request/ /^}/
+
+* Requester function
+
+An artificial but illustrative simulation of a requester.
+
+code concur/load2 /^func.requester/ /^}/
+
+* Worker definition
+
+A channel of requests, plus some load tracking data.
+
+code concur/load2 /type.Worker/ /^}/
+
+* Worker
+
+Balancer sends request to most lightly loaded worker.
+
+code concur/load2 /^func.*work.*done/ /^}/
+
+The channel of requests (w.requests) delivers requests to each worker.  The balancer tracks the number of pending requests as a measure of load.
+Each response goes directly to its requester.
+
+* Balancer definition
+
+The load balancer needs a pool of workers and a single channel to which requesters can send work.
+
+code concur/load2 /type.Pool/ /^}/
+
+* Balancer function
+
+Easy!
+
+code concur/load2 /func.*balance/ /^}/
+
+Just need to implement dispatch and completed.
+
+* A heap of channels
+
+Make Pool an implementation of the Heap interface by providing a few methods such as:
+
+code concur/load2 /func.*Less/ /^}/
+
+Now we balance by making the Pool a heap tracked by load.
+
+* Dispatch
+
+All the pieces are in place.
+
+code concur/load2 /Send.Request/ /^}/
+
+* Completed
+
+code concur/load2 /Job.is.complete/ /^}/
+
+* Lessons
+
+XXXX
+
+* One more example
+
+This one is subtler but XXX
+
 
 * Database multi-way request
 
@@ -164,343 +344,18 @@ Query servers in replicated database, return first response.
 code concur/snippets /Query/ /^}/
 
 
-#* Go does not directly support parallelism
-#
-#I haven't mentioned threads
-#
-#
-#
-#
-#
-#* Concurrency is not parallelism
-#
-#When Go was announced, many were surprised.
-#
-#
-#
-#* Test image
-#
-#image images/betsy.jpg 100 200
-#
-##* Structural mismatch
-##
-##Many programming problems realign one data structure to fit another structure.
-##- breaking text into lines
-##- "blocking" and "deblocking"
-##- packet assembly and disassembly
-##- parsing
-##- lexing
-##
-##* Sometimes hard
-##
-##The pieces on either side have independent state, lookahead, buffers, ...
-##Can be messy to do well.
-##
-##Coroutines were invented to solve this problem!
-##They enable us to write the two pieces independently.
-##
-##Let's look at this topic in the context of a lexer.
-##
-##
-##* A new template system
-##
-##Wanted to replace the old Go template package.
-##It had many problems:
-##- inflexible
-##- inexpressive
-##- code too fragile
-##
-##* A new template system
-##
-##Key change was re-engineering with a true lexer, parser,
-##and evaluator.
-##Has arbitrary text plus actions in {{ }}.
-##
-##code lex/snippets /Evaluation/ /Control.structures/
-##
-##* Today we focus on the lexer
-##
-##Must tokenize:
-##- the stuff outside actions
-##- action delimiters
-##- identifiers
-##- numeric constants
-##- string constants
-##- and others
-##
-##* Lex items
-##
-##Two things identify each lexed item:
-##- its type
-##- its value; a string is all we need
-##code lex/lex1.go /item.represents/ /^}/
-##
-##* Lex type
-##
-##The type is just an integer constant.
-##We use iota to define the values.
-##code lex/lex1.go /itemType.identifies/ /type/
-##code lex/lex1.go /const/ /itemEOF/
-##
-##* Lex type values (continued)
-##
-##code lex/lex1.go /itemElse/ /^\)/
-##
-##* Printing a lex item
-##
-##Printf has a convention making it easy to print any type: just define a String() method:
-##
-##code lex/lex1.go /func.*item.*String/ /^}/
-##
-##* How to tokenize?
-##
-##Many approaches available:
-##- use a tool such as lex or ragel
-##- use regular expressions
-##- use states, actions, and a switch statement
-##
-##* Tools
-##
-##Nothing wrong with using a tool but:
-##- hard to get good errors (can be very important)
-##- tend to require learning another language
-##- result can be large, even slow
-##- often a poor fit
-##- but lexing is easy to do yourself!
-##
-##* Regular expressions
-##
-##Blogged about this last week.
-##- overkill
-##- slow
-##- can explore the state space too much
-##- misuse of a dynamic engine to ask static questions
-##
-##* Let's write our own
-##
-##It's easy!
-##
-##Plus, most programming languages lex pretty much the same tokens, so once we learn how it's trivial to adapt the lexer for the next purpose.
-##
-##- an argument both for and against tools
-##
-##* State machine
-##
-##Many people will tell you to write a switch statement,
-##something like this:
-##
-##code lex/snippets /One/ /^}/
-##
-##* State machines are forgetful
-##
-##Boring and repetitive and error-prone, but anyway:
-##
-##Why switch?
-##
-##After each action, you know where you want to be;
-##the new state is the result of the action.
-##
-##But we throw the info away and recompute it from the state.
-##
-##(A consequence of returning to the caller.)
-##
-##A tool can compile that out, but so can we.
-##
-##* What is a state? An action?
-##
-##State represents where we are and what we expect.
-##
-##Action represents what we do.
-##
-##Actions result in a new state.
-##
-##* State function
-##
-##Let's put them together: a state function.
-##
-##Executes an action, returns the next state—as a state function.
-##
-##Recursive definition but simple and clear.
-##
-##code lex/lex1.go /stateFn/ /type/
-##
-##* The run loop
-##
-##Our state machine is trivial:
-##just run until the state goes to nil, representing "done".
-##
-##code lex/snippets /run.lexes/ /^}/
-##
-##* The concurrent step
-##
-##How do we make tokens available to the client?
-##Tokens can emerge at times that are inconvenient to stop to return to the caller.
-##
-##Use concurrency:
-##Run the state machine as a goroutine,
-##emit values on a channel.
-##
-##* The lexer type
-##
-##Here is the lexer type. Notice the channel of items; ignore the rest for now.
-##
-##code lex/lex1.go /lexer.holds/ /^}/
-##
-##* Starting the lexer
-##
-##A lexer initializes itself to lex a string and launches the state machine as a goroutine, returning the lexer itself and a channel of items.
-##
-##The API will change, don't worry about it now.
-##code lex/lex1.go /func.lex/ /^}/
-##
-##* The real run routine
-##
-##Here's the real state machine run function, which runs as a goroutine.
-##
-##code lex/lex1.go /run.lexes/ /^}/
-##
-##* The token emitter
-##
-##A token is a type and a value, but (yay Go) the value can just be sliced from the input string.
-##The lexer remembers where it is in the input and the emit routine just lobs that substring to the caller as the token's value.
-##
-##code lex/lex1.go /input.*scanned/ /pos.*position/
-##code lex/lex1.go /emit.passes/ /^}/
-##
-##* Starting the machine
-##
-##As the lexer begins it's looking for plain text, so the initial state is the function lexText.
-##It absorbs plain text until a "left meta" is encountered.
-##
-##code lex/lex1.go /run.lexes/ /^}/
-##code lex/lex1.go /leftMeta/
-##
-##* lexText
-##
-##code lex/lex1.go /^func.lexText/ /^}/
-##
-##* lexLeftMeta
-##
-##A trivial state function.
-##When we get here, we know there's a leftMeta in the input.
-##
-##code lex/lex1.go /^func.lexLeftMeta/ /^}/
-##
-##* lexInsideAction
-##
-##code lex/lex1.go /^func.lexInsideAction/ /itemPipe/
-##
-##* More of lexInsideAction
-##
-##This will give you the flavor.
-##code lex/lex1.go /case.*"/ /lexRawQuote/
-##code lex/lex1.go /case.*9/ /lexIdentifier/
-##
-##* The next function
-##
-##code lex/lex1.go /next.returns.the/ /^}/
-##
-##* Some lexing helpers
-##
-##code lex/lex1.go /ignore.skips/ /^}/
-##code lex/lex1.go /backup.steps/ /^}/
-##
-##* The peek function
-##
-##code lex/lex1.go /peek.returns.but/ /^}/
-##
-##* The accept functions
-##
-##code lex/lex1.go /accept.consumes/ /^}/
-##code lex/lex1.go /acceptRun.consumes/ /^}/
-##
-##* Lexing a number, including floating point
-##
-##code lex/lex1.go /^func.lexNumber/ /imaginary/
-##
-##* Lexing a number, continued
-##
-##This is more accepting than it should be, but not by much. Caller must call Atof to validate.
-##code lex/lex1.go /Is.it.imaginary/ /^}/
-##
-##* Errors
-##
-##Easy to handle: emit the bad token and shut down the machine.
-##
-##code lex/lex1.go /error.returns/ /^}/
-##
-##* Summary
-##
-##Concurrency makes the lexer easy to design.
-##
-##Goroutines allow lexer and caller (parser) each to run at its own rate, as clean sequential code.
-##
-##Channels give us a clean way to emit tokens.
-##
-##* A problem
-##
-##Can't run a goroutine to completion during initialization.
-##Forbidden by the language specification.
-##(Raises awful issues about order of init, best avoided.)
-##
-##That means we can't lex & parse a template during init.
-##
-##The goroutine is a problem....
-##
-##* Design vs. implementation
-##
-##...but it's not necessary anyway.
-##
-##The work is done by the design; now we just adjust the API.
-##
-##We can change the API to hide the channel, provide a function to get the next token, and rewrite the run function.
-##
-##It's easy.
-##
-##* A new API
-##
-##Hide the channel and buffer it slightly, turning it into a ring buffer.
-##
-##code lex/r59-lex.go /lex.creates.a.new/ /^}/
-##
-##* A function for the next item
-##
-##Traditional lexer API: return next item.
-##Includes the modified state machine runner.
-##code lex/r59-lex.go /nextItem.returns/ /^}/
-##
-##* That's it
-##
-##We now have a traditional API for a lexer with a simple, concurrent implementation under the covers.
-##
-##Even though the implementation is no longer truly concurrent, it still has all the advantages of concurrent design.
-##
-##We wouldn't have such a clean, efficient design if we hadn't thought about the problem in a concurrent way, without worrying about "restart".
-##
-##Model completely removes concerns about "structural mismatch".
-##
-##* Concurrency is a design approach
-##
-##Concurrency is not about parallelism.
-##
-##(Although it can enable parallelism).
-##
-##Concurrency is a way to design a program by decomposing it into independently executing pieces.
-##
-##The result can be clean, efficient, and very adaptable.
-##
-##* Conclusion
-##
-##Lexers are fun.
-##
-##Concurrency is fun.
-##
-##Go is fun.
-##
-##* For more information
-##
-##Go: http://golang.org
-##
-##New templates: http://golang.org/pkg/exp/template/
-##
-##(Next release will move them out of experimental.)
+
+* Conclusion
+
+
+Concurrency is powerful.
+
+Concurrency is not parallelism.
+
+Concurrency enables parallelism.
+
+Concurrency makes paralellism (and scaling and everything else) easy.
+
+* For more information
+
+Go: http://golang.org
