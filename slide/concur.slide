@@ -420,3 +420,6 @@ Parellelism is not concurrency (Harper): tinyurl.com/pincharper
 A concurrent window system (Pike): tinyurl.com/pikecws
 
 Concurrent power series (McIlroy): tinyurl.com/powser
+
+And finally, parallel but not concurrent:
+research.google.com/archive/sawzall.html
