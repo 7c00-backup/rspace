@@ -385,8 +385,10 @@ This one is subtler...
 * Database multi-way request
 
 Query servers in replicated database, return first response.
-code concur/snippets /Query/ /^}/
+code concur/snippets /func.Query/ /^}/
+Concurrent tools and garbage collection make this an easy solution to a subtle problem.
 
+(Teardown of late finishers is left as an exercise.)
 
 
 * Conclusion

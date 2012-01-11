@@ -409,7 +409,7 @@
 <img src="concur/gophersimple4.jpg" >
 
             <p>
-            This will consume books twice as fast.<br>
+            This will consume input twice as fast.<br>
             
             <br>
             
@@ -436,7 +436,7 @@
         </div> <!-- end slide template -->
       <!-- end of slide 13 --><!-- start of slide 14 -->
         <div class="slide" id="slide-14">
-          <header>Concurrent composition.</header>
+          <header>Concurrent composition</header>
 
           <section>
             <p>
@@ -1454,6 +1454,10 @@ func (b *Balancer) completed(w *Worker) {
             The result is easy to understand, efficient, scalable, and correct.<br>
             
             <br>
+            
+            Maybe even parallel.<br>
+            
+            <br>
             </p>
             
 
@@ -1493,18 +1497,13 @@ func (b *Balancer) completed(w *Worker) {
 
 
 <pre>
-<!--{{code "concur/snippets" `/Query/` `/^}/`}}
+<!--{{code "concur/snippets" `/func.Query/` `/^}/`}}
 -->func Query(conns []Conn, query string) Result {
-    ch := make(chan Result, 1)  // buffer of 1 item
+    ch := make(chan Result, len(conns))  // buffered
     for _, conn := range conns {
-      go func(c Conn) {
-        select {
-          case ch &lt;- c.DoQuery(query):
-            // nothing to do
-          default: // executes if ch is blocked
-            // nothing to do
-        }
-      }(conn)
+        go func(c Conn) {
+            ch &lt;- c.DoQuery(query):
+        }(conn)
     }
     return &lt;-ch
 }
@@ -1512,7 +1511,11 @@ func (b *Balancer) completed(w *Worker) {
 
 
             <p>
+            Concurrent tools and garbage collection make this an easy solution to a subtle problem.<br>
+            
             <br>
+            
+            (Teardown of late finishers is left as an exercise.)<br>
             
             <br>
             
