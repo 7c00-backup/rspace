@@ -415,6 +415,8 @@ Some history: swtch.com/~rsc/thread/
 
 A previous talk (video): tinyurl.com/newsqueak
 
+Parellelism is not concurrency (Harper): tinyurl.com/pincharper
+
 A concurrent window system (Pike): tinyurl.com/pikecws
 
 Concurrent power series (McIlroy): tinyurl.com/powser
