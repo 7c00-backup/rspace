@@ -105,14 +105,14 @@ A message (that is, a communication between the gophers) will do.
 
 Remove the bottleneck; make them really independent.
 image concur/gophersimple4.jpg
-This will consume books twice as fast.
+This will consume input twice as fast.
 
 * Concurrent composition
 
 image concur/gophersimple4.jpg
 The concurrent composition of two gopher procedures.
 
-* Concurrent composition.
+* Concurrent composition
 
 This design is not automatically parallel!
 
@@ -374,6 +374,8 @@ A complex problem can be broken down into easy-to-understand components.
 The pieces can be composed concurrently.
 
 The result is easy to understand, efficient, scalable, and correct.
+
+Maybe even parallel.
 
 * One more example
 
