@@ -1,3 +1,5 @@
+f("hello", "world") // f runs; we wait
+
 go f("hello", "world") // f starts running
 g() // does not wait for f to return
 
@@ -8,7 +10,8 @@ go func() {
 }()
 // Do something else; when ready, receive.
 // Receive will block until timerChan delivers.
-completedAt := <-timerChan // receive completion time
+// Value sent is other goroutine's completion time.
+completedAt := <-timerChan
 
 select {
 case v := <-ch1:

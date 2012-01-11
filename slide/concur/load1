@@ -12,7 +12,7 @@ func worker(in <-chan *Work, out chan<- *Work) {
 
 func Run() {
    in, out := make(chan *Work), make(chan *Work)
-   for i := 0; i < 10; i++ {
+   for i := 0; i < NumWorkers; i++ {
        go worker(in, out)
    }
    go sendLotsOfWork(in)

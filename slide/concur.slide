@@ -131,11 +131,11 @@ Three gophers in action, but with likely delays.
 Each gopher is an independently executing procedure,
 plus coordination (communication).
 
-* More fine-grained concurrency
+* Finer-grained concurrency
 
 Add another gopher procedure to return the empty carts.
 image concur/gophercomplex1.jpg
-Four gophers in action, better flow.
+Four gophers in action for better flow, each doing one simple task.
 
 If we arrange everything right (implausible but not impossible), that's four times faster than our original one-gopher design.
 
@@ -155,16 +155,17 @@ Four distinct gopher procedures:
 - unload cart into incinerator
 - return empty cart
 
-A different concurrent design from our first results in a different way to parallelize.
+Different concurrent designs enable different ways to parallelize.
 
 * More parallelization!
 
-We can now parallelize on the other axis; the concurrent design makes it easy. Eight gophers on the move.
+We can now parallelize on the other axis; the concurrent design makes it easy. Eight gophers, all busy.
 image concur/gophercomplex2.jpg
 
 * Or maybe no parallelization at all
 
 Keep in mind, even if only one gopher is active at a time (zero parallelism), it's still a correct and concurrent solution.
+image concur/gophercomplex2.jpg
 
 * Another design
 
@@ -206,7 +207,7 @@ In our book transport problem, substitute:
 - cart => marshaling, rendering, or networking
 - incinerator => proxy, browser, or other consumer
 
-It's a web service, and we have concurrent design.
+It becomes a concurrent design for a scalable web service.
 Gophers serving web content.
 
 * A little background about Go
@@ -216,8 +217,10 @@ Not the place for a tutorial, just quick highlights.
 * Goroutines
 
 A goroutine is a function running independently  in the same address space as other goroutines.
+code concur/snippets /f.runs/
+code concur/snippets /f.starts.running/ /return/
 
-code concur/snippets /starts.running/ /return/
+Like launching a function with shell's & notation.
 
 * Goroutines are not threads 
 
@@ -260,7 +263,7 @@ code concur/snippets /Compose/ /sin,/
 
 * Some examples
 
-Learn Go by osmosis.
+Learn concurrent Go by osmosis.
 
 * Launching daemons
 
@@ -285,12 +288,15 @@ Must make sure other workers can run when one blocks.
 * A simple load balancer (3)
 
 The runner:
-
 code concur/load1 /Run/ /^}/
+
+Easy problem but also hard to solve concisely without concurrency.
 
 * Concurrency enables parallelism
 
 The load balancer is implicitly parallel and scalable.
+
+NumWorkers could be huge.
 
 The tools of concurrency make it almost trivial to build a safe, working, scalable, parallel design.
 
@@ -311,12 +317,13 @@ image concur/gopherchart.jpg
 * Request definition
 
 The requester sends Requests to the balancer.
-
 code concur/load2 /^type.Request/ /^}/
+Note the return channel inside the request.
+Channels are first-class values.
 
 * Requester function
 
-An artificial but illustrative simulation of a requester.
+An artificial but illustrative simulation of a requester, a load generator.
 
 code concur/load2 /^func.requester/ /^}/
 
@@ -379,12 +386,10 @@ Maybe even parallel.
 
 * One more example
 
-This one is subtler...
+We have a replicated database and want to minimize latency by asking them all and returning the first response to arrive.
 
+* Query a replicated database
 
-* Database multi-way request
-
-Query servers in replicated database, return first response.
 code concur/snippets /func.Query/ /^}/
 Concurrent tools and garbage collection make this an easy solution to a subtle problem.
 

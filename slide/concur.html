@@ -492,7 +492,7 @@
         </div> <!-- end slide template -->
       <!-- end of slide 15 --><!-- start of slide 16 -->
         <div class="slide" id="slide-16">
-          <header>More fine-grained concurrency</header>
+          <header>Finer-grained concurrency</header>
 
           <section>
             <p>
@@ -505,7 +505,7 @@
 <img src="concur/gophercomplex1.jpg" >
 
             <p>
-            Four gophers in action, better flow.<br>
+            Four gophers in action for better flow, each doing one simple task.<br>
             
             <br>
             
@@ -565,7 +565,7 @@
 
 
             <p>
-            A different concurrent design from our first results in a different way to parallelize.<br>
+            Different concurrent designs enable different ways to parallelize.<br>
             
             <br>
             
@@ -577,7 +577,7 @@
 
           <section>
             <p>
-            We can now parallelize on the other axis; the concurrent design makes it easy. Eight gophers on the move.<br>
+            We can now parallelize on the other axis; the concurrent design makes it easy. Eight gophers, all busy.<br>
             </p>
             
 
@@ -597,14 +597,16 @@
           <section>
             <p>
             Keep in mind, even if only one gopher is active at a time (zero parallelism), it&#39;s still a correct and concurrent solution.<br>
-            
-            <br>
             </p>
             
 
 
 
+<img src="concur/gophercomplex2.jpg" >
+
             <p>
+            <br>
+            
           </section>
         </div> <!-- end slide template -->
       <!-- end of slide 20 --><!-- start of slide 21 -->
@@ -741,7 +743,7 @@
 
 
             <p>
-            It&#39;s a web service, and we have concurrent design.<br>
+            It becomes a concurrent design for a scalable web service.<br>
             
             Gophers serving web content.<br>
             
@@ -773,20 +775,27 @@
           <section>
             <p>
             A goroutine is a function running independently  in the same address space as other goroutines.<br>
-            
-            <br>
             </p>
             
 
 
 <pre>
-<!--{{code "concur/snippets" `/starts.running/` `/return/`}}
+<!--{{code "concur/snippets" `/f.runs/`}}
+-->f(&#34;hello&#34;, &#34;world&#34;) // f runs; we wait
+</pre>
+
+<pre>
+<!--{{code "concur/snippets" `/f.starts.running/` `/return/`}}
 -->go f(&#34;hello&#34;, &#34;world&#34;) // f starts running
 g() // does not wait for f to return
 </pre>
 
 
             <p>
+            <br>
+            
+            Like launching a function with shell&#39;s &amp; notation.<br>
+            
             <br>
             
           </section>
@@ -838,7 +847,8 @@ go func() {
 }()
 // Do something else; when ready, receive.
 // Receive will block until timerChan delivers.
-completedAt := &lt;-timerChan // receive completion time
+// Value sent is other goroutine&#39;s completion time.
+completedAt := &lt;-timerChan
 </pre>
 
 
@@ -950,7 +960,7 @@ print(Compose(sin, cos)(0.5))
 
           <section>
             <p>
-            Learn Go by osmosis.<br>
+            Learn concurrent Go by osmosis.<br>
             
             <br>
             </p>
@@ -1056,8 +1066,6 @@ print(Compose(sin, cos)(0.5))
           <section>
             <p>
             The runner:<br>
-            
-            <br>
             </p>
             
 
@@ -1066,7 +1074,7 @@ print(Compose(sin, cos)(0.5))
 <!--{{code "concur/load1" `/Run/` `/^}/`}}
 -->func Run() {
    in, out := make(chan *Work), make(chan *Work)
-   for i := 0; i &lt; 10; i++ {
+   for i := 0; i &lt; NumWorkers; i++ {
        go worker(in, out)
    }
    go sendLotsOfWork(in)
@@ -1078,6 +1086,10 @@ print(Compose(sin, cos)(0.5))
             <p>
             <br>
             
+            Easy problem but also hard to solve concisely without concurrency.<br>
+            
+            <br>
+            
           </section>
         </div> <!-- end slide template -->
       <!-- end of slide 38 --><!-- start of slide 39 -->
@@ -1087,6 +1099,10 @@ print(Compose(sin, cos)(0.5))
           <section>
             <p>
             The load balancer is implicitly parallel and scalable.<br>
+            
+            <br>
+            
+            NumWorkers could be huge.<br>
             
             <br>
             
@@ -1163,8 +1179,6 @@ print(Compose(sin, cos)(0.5))
           <section>
             <p>
             The requester sends Requests to the balancer.<br>
-            
-            <br>
             </p>
             
 
@@ -1179,6 +1193,10 @@ print(Compose(sin, cos)(0.5))
 
 
             <p>
+            Note the return channel inside the request.<br>
+            
+            Channels are first-class values.<br>
+            
             <br>
             
           </section>
@@ -1189,7 +1207,7 @@ print(Compose(sin, cos)(0.5))
 
           <section>
             <p>
-            An artificial but illustrative simulation of a requester.<br>
+            An artificial but illustrative simulation of a requester, a load generator.<br>
             
             <br>
             </p>
@@ -1202,7 +1220,7 @@ print(Compose(sin, cos)(0.5))
     c := make(chan int)
     for {
         // Kill some time (fake load).
-        time.Sleep(rand.Int63n(nWorker * 2 * time.Second))
+        Sleep(rand.Int63n(nWorker * 2 * Second))
         work &lt;- Request{workFn, c} // send request
         result := &lt;-c              // wait for answer
         furtherProcess(result)  
@@ -1395,7 +1413,7 @@ type Balancer struct {
 func (b *Balancer) dispatch(req Request) {
     // Grab the least loaded worker...
     w := heap.Pop(&amp;b.pool).(*Worker)
-    // ...assign it the task.
+    // ...send it the task.
     w.requests &lt;- req
     // One more in its work queue.
     w.pending++
@@ -1473,9 +1491,7 @@ func (b *Balancer) completed(w *Worker) {
 
           <section>
             <p>
-            This one is subtler...<br>
-            
-            <br>
+            We have a replicated database and want to minimize latency by asking them all and returning the first response to arrive.<br>
             
             <br>
             </p>
@@ -1488,12 +1504,10 @@ func (b *Balancer) completed(w *Worker) {
         </div> <!-- end slide template -->
       <!-- end of slide 53 --><!-- start of slide 54 -->
         <div class="slide" id="slide-54">
-          <header>Database multi-way request</header>
+          <header>Query a replicated database</header>
 
           <section>
-            <p>
-            Query servers in replicated database, return first response.<br>
-            </p>
+            <p></p>
             
 
 

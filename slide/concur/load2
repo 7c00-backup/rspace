@@ -7,7 +7,7 @@ func requester(work chan<- Request) {
     c := make(chan int)
     for {
     	// Kill some time (fake load).
-        time.Sleep(rand.Int63n(nWorker * 2 * time.Second))
+        Sleep(rand.Int63n(nWorker * 2 * Second))
         work <- Request{workFn, c} // send request
         result := <-c              // wait for answer
         furtherProcess(result)  
@@ -53,7 +53,7 @@ type Worker struct {
 func (b *Balancer) dispatch(req Request) {
 	// Grab the least loaded worker...
     w := heap.Pop(&b.pool).(*Worker)
-    // ...assign it the task.
+    // ...send it the task.
     w.requests <- req
     // One more in its work queue.
     w.pending++
