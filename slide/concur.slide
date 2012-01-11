@@ -409,4 +409,12 @@ Concurrency makes parallelism (and scaling and everything else) easy.
 
 * For more information
 
-Go: http://golang.org
+Go: golang.org
+
+Some history: swtch.com/~rsc/thread/
+
+A previous talk (video): tinyurl.com/newsqueak
+
+A concurrent window system (Pike): tinyurl.com/pikecws
+
+Concurrent power series (McIlroy): tinyurl.com/powser
