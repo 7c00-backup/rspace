@@ -52,9 +52,11 @@ Programming as the simultaneous execution of (possibly related) computations.
 
 Concurrency is about dealing with lots of things at once.
 
-Parallel is about doing lots of things at once.
+Parallelism is about doing lots of things at once.
 
-Not the same, but related. One is about structure, one is about execution.
+Not the same, but related.
+
+One is about structure, one is about execution.
 
 Concurrency provides a way to structure a solution to solve a problem that may (but not necessarily) be parallelizable.
 
@@ -70,7 +72,7 @@ Concurrency is a way to structure a program by breaking it into pieces that can 
 
 Communication is the means to coordinate the independent executions.
 
-This is Go's model and (like Erlang and others) it's based on CSP:
+This is the Go model and (like Erlang and others) it's based on CSP:
 
 C. A. R. Hoare: Communicating Sequential Processes (CACM 1978)
 
