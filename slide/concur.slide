@@ -50,23 +50,13 @@ Programming as the simultaneous execution of (possibly related) computations.
 
 * Concurrency vs. parallelism
 
-Programming as the composition of independently executing processes.
+Concurrency is about dealing with lots of things at once.
 
-vs.
+Parallel is about doing lots of things at once.
 
-Programming as the simultaneous execution of (possibly related) computations.
-
-Not obviously the same. One is about structure, one is about execution.
+Not the same, but related. One is about structure, one is about execution.
 
 Concurrency provides a way to structure a solution to solve a problem that may (but not necessarily) be parallelizable.
-
-* Concurrency
-
-Concurrency is a way to structure a program by breaking it into pieces that can be executed independently.
-
-Go's model (as in many languages) is based on CSP:
-
-Hoare: Communicating Sequential Processes
 
 * An analogy
 
@@ -74,15 +64,26 @@ Concurrent: Mouse, keyboard, display, and disk drivers.
 
 Parallel: Vector dot product.
 
+* Concurrency plus communication
+
+Concurrency is a way to structure a program by breaking it into pieces that can be executed independently.
+
+Communication is the means to coordinate the independent executions.
+
+This is Go's model and (like Erlang and others) it's based on CSP:
+
+C. A. R. Hoare: Communicating Sequential Processes (CACM 1978)
+
 * Gophers
 
 This is too abstract. Let's get concrete.
 
 * Our problem
 
+Move a pile of obsolete language manuals to the incinerator.
 image concur/gophersimple1.jpg
 
-Only one gopher will take too long.
+With only one gopher this will take too long.
 
 * More gophers!
 
@@ -95,64 +96,89 @@ More gophers are not enough; they need more carts.
 image concur/gophersimple2.jpg
 
 This will go faster, but there will be bottlenecks at the pile and incinerator.
+Also need to synchronize the gophers.
+A message (that is, a communication between the gophers) will do.
 
 * Double everything
 
+Remove the bottleneck; make them really independent.
 image concur/gophersimple4.jpg
-
 This will consume books twice as fast.
 
 * Concurrent composition
 
 image concur/gophersimple4.jpg
-
 The concurrent composition of two gopher procedures.
 
 * Concurrent composition.
 
-Our solution is not automatically parallel:
-What if only one gopher is moving at a time?
-Then it's concurrent, but not parallel.
+This design is not automatically parallel!
 
-But the concurrent composition suggests other models.
+What if only one gopher is moving at a time?
+Then it's still concurrent (that's in the design), just not parallel.
+
+However, it's automatically parallelizable!
+
+Moreover the concurrent composition suggests other models.
 
 * Another design
 
+image concur/gophercomplex0.jpg
+
+Three gophers in action, but with likely delays.
+Each gopher is an independently executing procedure,
+plus coordination (communication).
+
+* More fine-grained concurrency
+
+Add another gopher procedure to return the empty carts.
 image concur/gophercomplex1.jpg
+Four gophers in action, better flow.
 
-Four gophers in action.
+If we arrange everything right (implausible but not impossible), that's four times faster than our original one-gopher design.
 
-If we arrange everything right (implausible but not impossible), that's four times faster.
+* Observation
+
+We improved performance by adding a concurrent procedure to the existing design.
+
+More gophers doing more work; it runs better.
+
+This is a deeper insight than mere parallelism.
 
 * Concurrent procedures
 
 Four distinct gopher procedures:
-- load
-- carry
-- burn
-- return empty
+- load books onto cart
+- move cart to incinerator
+- unload cart into incinerator
+- return empty cart
 
-A different concurrent design, a different way to parallelize.
+A different concurrent design from our first results in a different way to parallelize.
 
 * More parallelization!
 
 We can now parallelize on the other axis; the concurrent design makes it easy. Eight gophers on the move.
 image concur/gophercomplex2.jpg
 
+* Or maybe no parallelization at all
+
+Keep in mind, even if only one gopher is active at a time (zero parallelism), it's still a correct and concurrent solution.
+
 * Another design
 
 Here's another way to structure the problem as the concurrent composition of gopher procedures.
-Two gopher procedures, plus a staging pile.
 
+Two gopher procedures, plus a staging pile.
 image concur/gophercomplex3.jpg
 
 * Parallelize the usual way
 
+Run more concurrent procedures to get more throughput.
 image concur/gophercomplex4.jpg
 
 * Or a different way
 
-Bring the staging pile to the complex model
+Bring the staging pile to the multi-gopher concurrent model:
 
 image concur/gophercomplex5.jpg
 
@@ -168,17 +194,18 @@ There are many ways to break the processing down.
 
 That's concurrent design.
 
-Once we have the breakdown, parallelization might fall out.
+Once we have the breakdown, parallelization can fall out and correctness is easy.
 
 * Back to Computing
 
 In our book transport problem, substitute:
-- book pile for web content
-- gopher for CPU
-- cart for marshaling, rendering
-- incinerator for proxy, browser, or other consumer
+- book pile => web content
+- gopher => CPU
+- cart => marshaling, rendering, or networking
+- incinerator => proxy, browser, or other consumer
 
 It's a web service, and we have concurrent design.
+Gophers serving web content.
 
 * A little background about Go
 
@@ -186,9 +213,17 @@ Not the place for a tutorial, just quick highlights.
 
 * Goroutines
 
-A goroutine is a function running independently  in the same address space.
+A goroutine is a function running independently  in the same address space as other goroutines.
 
 code concur/snippets /starts.running/ /return/
+
+* Goroutines are not threads 
+
+(They're a bit like threads, but they're much cheaper.)
+
+Goroutines are multiplexed onto OS threads as required.
+
+When a goroutine blocks, that thread blocks but no other goroutine blocks.
 
 * Channels
 
@@ -204,33 +239,34 @@ code concur/snippets /select/ /}/
 
 * Go really supports concurrency
 
-It's routine to have thousands of goroutines active in a program.
+Really.
+
+It's routine to create thousands of goroutines in one program.
+(Once debugged a program after it had created 1.3 million.)
 
 Stacks start small, but grow and shrink as required.
 
 Goroutines aren't free, but they're very cheap.
 
-* Goroutines are not threads 
+* Closures are also part of the story
 
-(They're much cheaper.)
+Make some concurrent calculations easier to express.
 
-Goroutines are multiplexed onto threads as required.
-
-When a goroutine blocks, that thread blocks but other goroutines do not.
-
-* Closures are part of the story
-
-Closures are just local functions.
+They are just local functions.
+Here's a non-concurrent example.
 code concur/snippets /Compose/ /sin,/
 
 * Some examples
+
+Learn Go by osmosis.
 
 * Launching daemons
 
 Use a closure to wrap a background operation.
 
-The for range operation runs until channel is drained.
+This copies items from the input channel to the output channel.
 code concur/snippets /copy.input/ /^}/
+The for range operation runs until channel is drained.
 
 * A simple load balancer (1)
 
@@ -329,13 +365,17 @@ code concur/load2 /Send.Request/ /^}/
 
 code concur/load2 /Job.is.complete/ /^}/
 
-* Lessons
+* Lesson
 
-XXXX
+A complex problem can be broken down into easy-to-understand components.
+
+The pieces can be composed concurrently.
+
+The result is easy to understand, efficient, scalable, and correct.
 
 * One more example
 
-This one is subtler but XXX
+This one is subtler...
 
 
 * Database multi-way request
@@ -354,7 +394,7 @@ Concurrency is not parallelism.
 
 Concurrency enables parallelism.
 
-Concurrency makes paralellism (and scaling and everything else) easy.
+Concurrency makes parallelism (and scaling and everything else) easy.
 
 * For more information
 

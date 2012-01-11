@@ -231,19 +231,15 @@
 
           <section>
             <p>
-            Programming as the composition of independently executing processes.<br>
+            Concurrency is about dealing with lots of things at once.<br>
             
             <br>
             
-            vs.<br>
+            Parallel is about doing lots of things at once.<br>
             
             <br>
             
-            Programming as the simultaneous execution of (possibly related) computations.<br>
-            
-            <br>
-            
-            Not obviously the same. One is about structure, one is about execution.<br>
+            Not the same, but related. One is about structure, one is about execution.<br>
             
             <br>
             
@@ -260,19 +256,15 @@
         </div> <!-- end slide template -->
       <!-- end of slide 5 --><!-- start of slide 6 -->
         <div class="slide" id="slide-6">
-          <header>Concurrency</header>
+          <header>An analogy</header>
 
           <section>
             <p>
-            Concurrency is a way to structure a program by breaking it into pieces that can be executed independently.<br>
+            Concurrent: Mouse, keyboard, display, and disk drivers.<br>
             
             <br>
             
-            Go&#39;s model (as in many languages) is based on CSP:<br>
-            
-            <br>
-            
-            Hoare: Communicating Sequential Processes<br>
+            Parallel: Vector dot product.<br>
             
             <br>
             </p>
@@ -285,15 +277,23 @@
         </div> <!-- end slide template -->
       <!-- end of slide 6 --><!-- start of slide 7 -->
         <div class="slide" id="slide-7">
-          <header>An analogy</header>
+          <header>Concurrency plus communication</header>
 
           <section>
             <p>
-            Concurrent: Mouse, keyboard, display, and disk drivers.<br>
+            Concurrency is a way to structure a program by breaking it into pieces that can be executed independently.<br>
             
             <br>
             
-            Parallel: Vector dot product.<br>
+            Communication is the means to coordinate the independent executions.<br>
+            
+            <br>
+            
+            This is Go&#39;s model and (like Erlang and others) it&#39;s based on CSP:<br>
+            
+            <br>
+            
+            C. A. R. Hoare: Communicating Sequential Processes (CACM 1978)<br>
             
             <br>
             </p>
@@ -326,7 +326,9 @@
           <header>Our problem</header>
 
           <section>
-            <p></p>
+            <p>
+            Move a pile of obsolete language manuals to the incinerator.<br>
+            </p>
             
 
 
@@ -336,7 +338,7 @@
             <p>
             <br>
             
-            Only one gopher will take too long.<br>
+            With only one gopher this will take too long.<br>
             
             <br>
             
@@ -380,6 +382,10 @@
             
             This will go faster, but there will be bottlenecks at the pile and incinerator.<br>
             
+            Also need to synchronize the gophers.<br>
+            
+            A message (that is, a communication between the gophers) will do.<br>
+            
             <br>
             
           </section>
@@ -389,7 +395,9 @@
           <header>Double everything</header>
 
           <section>
-            <p></p>
+            <p>
+            Remove the bottleneck; make them really independent.<br>
+            </p>
             
 
 
@@ -397,8 +405,6 @@
 <img src="concur/gophersimple4.jpg" >
 
             <p>
-            <br>
-            
             This will consume books twice as fast.<br>
             
             <br>
@@ -418,8 +424,6 @@
 <img src="concur/gophersimple4.jpg" >
 
             <p>
-            <br>
-            
             The concurrent composition of two gopher procedures.<br>
             
             <br>
@@ -432,15 +436,21 @@
 
           <section>
             <p>
-            Our solution is not automatically parallel:<br>
-            
-            What if only one gopher is moving at a time?<br>
-            
-            Then it&#39;s concurrent, but not parallel.<br>
+            This design is not automatically parallel!<br>
             
             <br>
             
-            But the concurrent composition suggests other models.<br>
+            What if only one gopher is moving at a time?<br>
+            
+            Then it&#39;s still concurrent (that&#39;s in the design), just not parallel.<br>
+            
+            <br>
+            
+            However, it&#39;s automatically parallelizable!<br>
+            
+            <br>
+            
+            Moreover the concurrent composition suggests other models.<br>
             
             <br>
             </p>
@@ -461,16 +471,16 @@
 
 
 
-<img src="concur/gophercomplex1.jpg" >
+<img src="concur/gophercomplex0.jpg" >
 
             <p>
             <br>
             
-            Four gophers in action.<br>
+            Three gophers in action, but with likely delays.<br>
             
-            <br>
+            Each gopher is an independently executing procedure,<br>
             
-            If we arrange everything right (implausible but not impossible), that&#39;s four times faster.<br>
+            plus coordination (communication).<br>
             
             <br>
             
@@ -478,6 +488,56 @@
         </div> <!-- end slide template -->
       <!-- end of slide 15 --><!-- start of slide 16 -->
         <div class="slide" id="slide-16">
+          <header>More fine-grained concurrency</header>
+
+          <section>
+            <p>
+            Add another gopher procedure to return the empty carts.<br>
+            </p>
+            
+
+
+
+<img src="concur/gophercomplex1.jpg" >
+
+            <p>
+            Four gophers in action, better flow.<br>
+            
+            <br>
+            
+            If we arrange everything right (implausible but not impossible), that&#39;s four times faster than our original one-gopher design.<br>
+            
+            <br>
+            
+          </section>
+        </div> <!-- end slide template -->
+      <!-- end of slide 16 --><!-- start of slide 17 -->
+        <div class="slide" id="slide-17">
+          <header>Observation</header>
+
+          <section>
+            <p>
+            We improved performance by adding a concurrent procedure to the existing design.<br>
+            
+            <br>
+            
+            More gophers doing more work; it runs better.<br>
+            
+            <br>
+            
+            This is a deeper insight than mere parallelism.<br>
+            
+            <br>
+            </p>
+            
+
+
+
+            <p>
+          </section>
+        </div> <!-- end slide template -->
+      <!-- end of slide 17 --><!-- start of slide 18 -->
+        <div class="slide" id="slide-18">
           <header>Concurrent procedures</header>
 
           <section>
@@ -487,13 +547,13 @@
             
             <ul>
             
-            <li>load</li>
+            <li>load books onto cart</li>
             
-            <li>carry</li>
+            <li>move cart to incinerator</li>
             
-            <li>burn</li>
+            <li>unload cart into incinerator</li>
             
-            <li>return empty</li>
+            <li>return empty cart</li>
             
             </ul>
             
@@ -501,14 +561,14 @@
 
 
             <p>
-            A different concurrent design, a different way to parallelize.<br>
+            A different concurrent design from our first results in a different way to parallelize.<br>
             
             <br>
             
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 16 --><!-- start of slide 17 -->
-        <div class="slide" id="slide-17">
+      <!-- end of slide 18 --><!-- start of slide 19 -->
+        <div class="slide" id="slide-19">
           <header>More parallelization!</header>
 
           <section>
@@ -526,17 +586,34 @@
             
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 17 --><!-- start of slide 18 -->
-        <div class="slide" id="slide-18">
+      <!-- end of slide 19 --><!-- start of slide 20 -->
+        <div class="slide" id="slide-20">
+          <header>Or maybe no parallelization at all</header>
+
+          <section>
+            <p>
+            Keep in mind, even if only one gopher is active at a time (zero parallelism), it&#39;s still a correct and concurrent solution.<br>
+            
+            <br>
+            </p>
+            
+
+
+
+            <p>
+          </section>
+        </div> <!-- end slide template -->
+      <!-- end of slide 20 --><!-- start of slide 21 -->
+        <div class="slide" id="slide-21">
           <header>Another design</header>
 
           <section>
             <p>
             Here&#39;s another way to structure the problem as the concurrent composition of gopher procedures.<br>
             
-            Two gopher procedures, plus a staging pile.<br>
-            
             <br>
+            
+            Two gopher procedures, plus a staging pile.<br>
             </p>
             
 
@@ -549,12 +626,14 @@
             
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 18 --><!-- start of slide 19 -->
-        <div class="slide" id="slide-19">
+      <!-- end of slide 21 --><!-- start of slide 22 -->
+        <div class="slide" id="slide-22">
           <header>Parallelize the usual way</header>
 
           <section>
-            <p></p>
+            <p>
+            Run more concurrent procedures to get more throughput.<br>
+            </p>
             
 
 
@@ -566,13 +645,13 @@
             
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 19 --><!-- start of slide 20 -->
-        <div class="slide" id="slide-20">
+      <!-- end of slide 22 --><!-- start of slide 23 -->
+        <div class="slide" id="slide-23">
           <header>Or a different way</header>
 
           <section>
             <p>
-            Bring the staging pile to the complex model<br>
+            Bring the staging pile to the multi-gopher concurrent model:<br>
             
             <br>
             </p>
@@ -587,8 +666,8 @@
             
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 20 --><!-- start of slide 21 -->
-        <div class="slide" id="slide-21">
+      <!-- end of slide 23 --><!-- start of slide 24 -->
+        <div class="slide" id="slide-24">
           <header>Full on optimization</header>
 
           <section>
@@ -608,8 +687,8 @@
             
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 21 --><!-- start of slide 22 -->
-        <div class="slide" id="slide-22">
+      <!-- end of slide 24 --><!-- start of slide 25 -->
+        <div class="slide" id="slide-25">
           <header>Lesson</header>
 
           <section>
@@ -622,7 +701,7 @@
             
             <br>
             
-            Once we have the breakdown, parallelization might fall out.<br>
+            Once we have the breakdown, parallelization can fall out and correctness is easy.<br>
             
             <br>
             </p>
@@ -633,8 +712,8 @@
             <p>
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 22 --><!-- start of slide 23 -->
-        <div class="slide" id="slide-23">
+      <!-- end of slide 25 --><!-- start of slide 26 -->
+        <div class="slide" id="slide-26">
           <header>Back to Computing</header>
 
           <section>
@@ -644,13 +723,13 @@
             
             <ul>
             
-            <li>book pile for web content</li>
+            <li>book pile =&gt; web content</li>
             
-            <li>gopher for CPU</li>
+            <li>gopher =&gt; CPU</li>
             
-            <li>cart for marshaling, rendering</li>
+            <li>cart =&gt; marshaling, rendering, or networking</li>
             
-            <li>incinerator for proxy, browser, or other consumer</li>
+            <li>incinerator =&gt; proxy, browser, or other consumer</li>
             
             </ul>
             
@@ -660,12 +739,14 @@
             <p>
             It&#39;s a web service, and we have concurrent design.<br>
             
+            Gophers serving web content.<br>
+            
             <br>
             
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 23 --><!-- start of slide 24 -->
-        <div class="slide" id="slide-24">
+      <!-- end of slide 26 --><!-- start of slide 27 -->
+        <div class="slide" id="slide-27">
           <header>A little background about Go</header>
 
           <section>
@@ -681,13 +762,13 @@
             <p>
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 24 --><!-- start of slide 25 -->
-        <div class="slide" id="slide-25">
+      <!-- end of slide 27 --><!-- start of slide 28 -->
+        <div class="slide" id="slide-28">
           <header>Goroutines</header>
 
           <section>
             <p>
-            A goroutine is a function running independently  in the same address space.<br>
+            A goroutine is a function running independently  in the same address space as other goroutines.<br>
             
             <br>
             </p>
@@ -706,8 +787,33 @@ g() // does not wait for f to return
             
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 25 --><!-- start of slide 26 -->
-        <div class="slide" id="slide-26">
+      <!-- end of slide 28 --><!-- start of slide 29 -->
+        <div class="slide" id="slide-29">
+          <header>Goroutines are not threads </header>
+
+          <section>
+            <p>
+            (They&#39;re a bit like threads, but they&#39;re much cheaper.)<br>
+            
+            <br>
+            
+            Goroutines are multiplexed onto OS threads as required.<br>
+            
+            <br>
+            
+            When a goroutine blocks, that thread blocks but no other goroutine blocks.<br>
+            
+            <br>
+            </p>
+            
+
+
+
+            <p>
+          </section>
+        </div> <!-- end slide template -->
+      <!-- end of slide 29 --><!-- start of slide 30 -->
+        <div class="slide" id="slide-30">
           <header>Channels</header>
 
           <section>
@@ -737,8 +843,8 @@ completedAt := &lt;-timerChan // receive completion time
             
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 26 --><!-- start of slide 27 -->
-        <div class="slide" id="slide-27">
+      <!-- end of slide 30 --><!-- start of slide 31 -->
+        <div class="slide" id="slide-31">
           <header>Select</header>
 
           <section>
@@ -768,13 +874,19 @@ default: // optional
             
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 27 --><!-- start of slide 28 -->
-        <div class="slide" id="slide-28">
+      <!-- end of slide 31 --><!-- start of slide 32 -->
+        <div class="slide" id="slide-32">
           <header>Go really supports concurrency</header>
 
           <section>
             <p>
-            It&#39;s routine to have thousands of goroutines active in a program.<br>
+            Really.<br>
+            
+            <br>
+            
+            It&#39;s routine to create thousands of goroutines in one program.<br>
+            
+            (Once debugged a program after it had created 1.3 million.)<br>
             
             <br>
             
@@ -793,38 +905,19 @@ default: // optional
             <p>
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 28 --><!-- start of slide 29 -->
-        <div class="slide" id="slide-29">
-          <header>Goroutines are not threads </header>
+      <!-- end of slide 32 --><!-- start of slide 33 -->
+        <div class="slide" id="slide-33">
+          <header>Closures are also part of the story</header>
 
           <section>
             <p>
-            (They&#39;re much cheaper.)<br>
+            Make some concurrent calculations easier to express.<br>
             
             <br>
             
-            Goroutines are multiplexed onto threads as required.<br>
+            They are just local functions.<br>
             
-            <br>
-            
-            When a goroutine blocks, that thread blocks but other goroutines do not.<br>
-            
-            <br>
-            </p>
-            
-
-
-
-            <p>
-          </section>
-        </div> <!-- end slide template -->
-      <!-- end of slide 29 --><!-- start of slide 30 -->
-        <div class="slide" id="slide-30">
-          <header>Closures are part of the story</header>
-
-          <section>
-            <p>
-            Closures are just local functions.<br>
+            Here&#39;s a non-concurrent example.<br>
             </p>
             
 
@@ -847,12 +940,16 @@ print(Compose(sin, cos)(0.5))
             
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 30 --><!-- start of slide 31 -->
-        <div class="slide" id="slide-31">
+      <!-- end of slide 33 --><!-- start of slide 34 -->
+        <div class="slide" id="slide-34">
           <header>Some examples</header>
 
           <section>
-            <p></p>
+            <p>
+            Learn Go by osmosis.<br>
+            
+            <br>
+            </p>
             
 
 
@@ -860,8 +957,8 @@ print(Compose(sin, cos)(0.5))
             <p>
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 31 --><!-- start of slide 32 -->
-        <div class="slide" id="slide-32">
+      <!-- end of slide 34 --><!-- start of slide 35 -->
+        <div class="slide" id="slide-35">
           <header>Launching daemons</header>
 
           <section>
@@ -870,7 +967,7 @@ print(Compose(sin, cos)(0.5))
             
             <br>
             
-            The for range operation runs until channel is drained.<br>
+            This copies items from the input channel to the output channel.<br>
             </p>
             
 
@@ -886,12 +983,14 @@ print(Compose(sin, cos)(0.5))
 
 
             <p>
+            The for range operation runs until channel is drained.<br>
+            
             <br>
             
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 32 --><!-- start of slide 33 -->
-        <div class="slide" id="slide-33">
+      <!-- end of slide 35 --><!-- start of slide 36 -->
+        <div class="slide" id="slide-36">
           <header>A simple load balancer (1)</header>
 
           <section>
@@ -916,8 +1015,8 @@ print(Compose(sin, cos)(0.5))
             
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 33 --><!-- start of slide 34 -->
-        <div class="slide" id="slide-34">
+      <!-- end of slide 36 --><!-- start of slide 37 -->
+        <div class="slide" id="slide-37">
           <header>A simple load balancer (2)</header>
 
           <section>
@@ -931,7 +1030,7 @@ print(Compose(sin, cos)(0.5))
 
 <pre>
 <!--{{code "concur/load1" `/worker/` `/^}/`}}
--->func worker(in &lt;-chan *Work, out chan &lt;- *Work) {
+-->func worker(in &lt;-chan *Work, out chan&lt;- *Work) {
    for w := range in {
       w.z = w.x * w.y
       out &lt;- w
@@ -945,8 +1044,8 @@ print(Compose(sin, cos)(0.5))
             
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 34 --><!-- start of slide 35 -->
-        <div class="slide" id="slide-35">
+      <!-- end of slide 37 --><!-- start of slide 38 -->
+        <div class="slide" id="slide-38">
           <header>A simple load balancer (3)</header>
 
           <section>
@@ -976,8 +1075,8 @@ print(Compose(sin, cos)(0.5))
             
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 35 --><!-- start of slide 36 -->
-        <div class="slide" id="slide-36">
+      <!-- end of slide 38 --><!-- start of slide 39 -->
+        <div class="slide" id="slide-39">
           <header>Concurrency enables parallelism</header>
 
           <section>
@@ -997,8 +1096,8 @@ print(Compose(sin, cos)(0.5))
             <p>
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 36 --><!-- start of slide 37 -->
-        <div class="slide" id="slide-37">
+      <!-- end of slide 39 --><!-- start of slide 40 -->
+        <div class="slide" id="slide-40">
           <header>Concurrency simplifies synchronization</header>
 
           <section>
@@ -1018,8 +1117,8 @@ print(Compose(sin, cos)(0.5))
             <p>
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 37 --><!-- start of slide 38 -->
-        <div class="slide" id="slide-38">
+      <!-- end of slide 40 --><!-- start of slide 41 -->
+        <div class="slide" id="slide-41">
           <header>That was too easy</header>
 
           <section>
@@ -1035,8 +1134,8 @@ print(Compose(sin, cos)(0.5))
             <p>
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 38 --><!-- start of slide 39 -->
-        <div class="slide" id="slide-39">
+      <!-- end of slide 41 --><!-- start of slide 42 -->
+        <div class="slide" id="slide-42">
           <header>Load balancer</header>
 
           <section>
@@ -1052,8 +1151,8 @@ print(Compose(sin, cos)(0.5))
             
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 39 --><!-- start of slide 40 -->
-        <div class="slide" id="slide-40">
+      <!-- end of slide 42 --><!-- start of slide 43 -->
+        <div class="slide" id="slide-43">
           <header>Request definition</header>
 
           <section>
@@ -1079,8 +1178,8 @@ print(Compose(sin, cos)(0.5))
             
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 40 --><!-- start of slide 41 -->
-        <div class="slide" id="slide-41">
+      <!-- end of slide 43 --><!-- start of slide 44 -->
+        <div class="slide" id="slide-44">
           <header>Requester function</header>
 
           <section>
@@ -1112,8 +1211,8 @@ print(Compose(sin, cos)(0.5))
             
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 41 --><!-- start of slide 42 -->
-        <div class="slide" id="slide-42">
+      <!-- end of slide 44 --><!-- start of slide 45 -->
+        <div class="slide" id="slide-45">
           <header>Worker definition</header>
 
           <section>
@@ -1140,8 +1239,8 @@ print(Compose(sin, cos)(0.5))
             
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 42 --><!-- start of slide 43 -->
-        <div class="slide" id="slide-43">
+      <!-- end of slide 45 --><!-- start of slide 46 -->
+        <div class="slide" id="slide-46">
           <header>Worker</header>
 
           <section>
@@ -1176,8 +1275,8 @@ print(Compose(sin, cos)(0.5))
             
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 43 --><!-- start of slide 44 -->
-        <div class="slide" id="slide-44">
+      <!-- end of slide 46 --><!-- start of slide 47 -->
+        <div class="slide" id="slide-47">
           <header>Balancer definition</header>
 
           <section>
@@ -1205,8 +1304,8 @@ type Balancer struct {
             
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 44 --><!-- start of slide 45 -->
-        <div class="slide" id="slide-45">
+      <!-- end of slide 47 --><!-- start of slide 48 -->
+        <div class="slide" id="slide-48">
           <header>Balancer function</header>
 
           <section>
@@ -1242,8 +1341,8 @@ type Balancer struct {
             
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 45 --><!-- start of slide 46 -->
-        <div class="slide" id="slide-46">
+      <!-- end of slide 48 --><!-- start of slide 49 -->
+        <div class="slide" id="slide-49">
           <header>A heap of channels</header>
 
           <section>
@@ -1272,8 +1371,8 @@ type Balancer struct {
             
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 46 --><!-- start of slide 47 -->
-        <div class="slide" id="slide-47">
+      <!-- end of slide 49 --><!-- start of slide 50 -->
+        <div class="slide" id="slide-50">
           <header>Dispatch</header>
 
           <section>
@@ -1306,8 +1405,8 @@ func (b *Balancer) dispatch(req Request) {
             
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 47 --><!-- start of slide 48 -->
-        <div class="slide" id="slide-48">
+      <!-- end of slide 50 --><!-- start of slide 51 -->
+        <div class="slide" id="slide-51">
           <header>Completed</header>
 
           <section>
@@ -1334,13 +1433,21 @@ func (b *Balancer) completed(w *Worker) {
             
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 48 --><!-- start of slide 49 -->
-        <div class="slide" id="slide-49">
-          <header>Lessons</header>
+      <!-- end of slide 51 --><!-- start of slide 52 -->
+        <div class="slide" id="slide-52">
+          <header>Lesson</header>
 
           <section>
             <p>
-            XXXX<br>
+            A complex problem can be broken down into easy-to-understand components.<br>
+            
+            <br>
+            
+            They can be composed concurrently.<br>
+            
+            <br>
+            
+            The result is easy to understand, efficient, scalable, and correct.<br>
             
             <br>
             </p>
@@ -1351,8 +1458,8 @@ func (b *Balancer) completed(w *Worker) {
             <p>
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 49 --><!-- start of slide 50 -->
-        <div class="slide" id="slide-50">
+      <!-- end of slide 52 --><!-- start of slide 53 -->
+        <div class="slide" id="slide-53">
           <header>One more example</header>
 
           <section>
@@ -1370,8 +1477,8 @@ func (b *Balancer) completed(w *Worker) {
             <p>
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 50 --><!-- start of slide 51 -->
-        <div class="slide" id="slide-51">
+      <!-- end of slide 53 --><!-- start of slide 54 -->
+        <div class="slide" id="slide-54">
           <header>Database multi-way request</header>
 
           <section>
@@ -1409,8 +1516,8 @@ func (b *Balancer) completed(w *Worker) {
             
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 51 --><!-- start of slide 52 -->
-        <div class="slide" id="slide-52">
+      <!-- end of slide 54 --><!-- start of slide 55 -->
+        <div class="slide" id="slide-55">
           <header>Conclusion</header>
 
           <section>
@@ -1427,7 +1534,7 @@ func (b *Balancer) completed(w *Worker) {
             
             <br>
             
-            Concurrency makes paralellism (and scaling and everything else) easy.<br>
+            Concurrency makes parallelism (and scaling and everything else) easy.<br>
             
             <br>
             </p>
@@ -1438,8 +1545,8 @@ func (b *Balancer) completed(w *Worker) {
             <p>
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 52 --><!-- start of slide 53 -->
-        <div class="slide" id="slide-53">
+      <!-- end of slide 55 --><!-- start of slide 56 -->
+        <div class="slide" id="slide-56">
           <header>For more information</header>
 
           <section>
@@ -1455,7 +1562,7 @@ func (b *Balancer) completed(w *Worker) {
             <p>
           </section>
         </div> <!-- end slide template -->
-      <!-- end of slide 53 -->
+      <!-- end of slide 56 -->
 
         <div class="slide" id="goodbye">
           <section class="middle">
