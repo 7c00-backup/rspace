@@ -7,7 +7,7 @@ func requester(work chan<- Request) {
     c := make(chan int)
     for {
     	// Kill some time (fake load).
-        time.Sleep(rand.Int63n(nWorker * 2e9))
+        time.Sleep(rand.Int63n(nWorker * 2 * time.Second))
         work <- Request{workFn, c} // send request
         result := <-c              // wait for answer
         furtherProcess(result)  

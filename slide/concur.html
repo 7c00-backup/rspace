@@ -853,7 +853,7 @@ completedAt := &lt;-timerChan // receive completion time
 
           <section>
             <p>
-            The select statement is like a switch, but the decision is based on ability to communicate rather than just equal values.<br>
+            The select statement is like a switch, but the decision is based on ability to communicate rather than equal values.<br>
             
             <br>
             </p>
@@ -982,7 +982,7 @@ print(Compose(sin, cos)(0.5))
     for val := range input {
         output &lt;- val
     }
-}
+}()
 </pre>
 
 
@@ -1026,8 +1026,6 @@ print(Compose(sin, cos)(0.5))
           <section>
             <p>
             A worker task:<br>
-            
-            <br>
             </p>
             
 
@@ -1037,6 +1035,7 @@ print(Compose(sin, cos)(0.5))
 -->func worker(in &lt;-chan *Work, out chan&lt;- *Work) {
    for w := range in {
       w.z = w.x * w.y
+      Sleep(w.z)
       out &lt;- w
    }
 }
@@ -1044,6 +1043,8 @@ print(Compose(sin, cos)(0.5))
 
 
             <p>
+            Must make sure other workers run when we block.<br>
+            
             <br>
             
           </section>
@@ -1201,7 +1202,7 @@ print(Compose(sin, cos)(0.5))
     c := make(chan int)
     for {
         // Kill some time (fake load).
-        time.Sleep(rand.Int63n(nWorker * 2e9))
+        time.Sleep(rand.Int63n(nWorker * 2 * time.Second))
         work &lt;- Request{workFn, c} // send request
         result := &lt;-c              // wait for answer
         furtherProcess(result)  
@@ -1250,8 +1251,6 @@ print(Compose(sin, cos)(0.5))
           <section>
             <p>
             Balancer sends request to most lightly loaded worker.<br>
-            
-            <br>
             </p>
             
 
@@ -1269,11 +1268,13 @@ print(Compose(sin, cos)(0.5))
 
 
             <p>
-            <br>
-            
             The channel of requests (w.requests) delivers requests to each worker.  The balancer tracks the number of pending requests as a measure of load.<br>
             
             Each response goes directly to its requester.<br>
+            
+            <br>
+            
+            Could run the loop body as a goroutine for parallelism.<br>
             
             <br>
             
@@ -1285,7 +1286,7 @@ print(Compose(sin, cos)(0.5))
 
           <section>
             <p>
-            The load balancer needs a pool of workers and a single channel to which requesters can send work.<br>
+            The load balancer needs a pool of workers and a single channel to which requesters can report task completion.<br>
             
             <br>
             </p>

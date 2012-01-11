@@ -58,4 +58,4 @@ go func() { // copy input to output
 	for val := range input {
 		output <- val
 	}
-}
+}()

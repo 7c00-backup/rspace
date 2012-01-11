@@ -235,7 +235,7 @@ code concur/snippets /make.*chan/ /completedAt/
 
 * Select
 
-The select statement is like a switch, but the decision is based on ability to communicate rather than just equal values.
+The select statement is like a switch, but the decision is based on ability to communicate rather than equal values.
 
 code concur/snippets /select/ /}/
 
@@ -279,8 +279,8 @@ code concur/load1 /type/ /^}/
 * A simple load balancer (2)
 
 A worker task:
-
 code concur/load1 /worker/ /^}/
+Must make sure other workers can run when one blocks.
 
 * A simple load balancer (3)
 
@@ -329,15 +329,15 @@ code concur/load2 /type.Worker/ /^}/
 * Worker
 
 Balancer sends request to most lightly loaded worker.
-
 code concur/load2 /^func.*work.*done/ /^}/
-
 The channel of requests (w.requests) delivers requests to each worker.  The balancer tracks the number of pending requests as a measure of load.
 Each response goes directly to its requester.
 
+Could run the loop body as a goroutine for parallelism.
+
 * Balancer definition
 
-The load balancer needs a pool of workers and a single channel to which requesters can send work.
+The load balancer needs a pool of workers and a single channel to which requesters can report task completion.
 
 code concur/load2 /type.Pool/ /^}/
 

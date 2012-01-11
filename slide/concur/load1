@@ -5,6 +5,7 @@ type Work struct {
 func worker(in <-chan *Work, out chan<- *Work) {
    for w := range in {
       w.z = w.x * w.y
+      Sleep(w.z)
       out <- w
    }
 }
