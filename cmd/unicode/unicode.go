@@ -13,9 +13,13 @@ import (
 var doNum = flag.Bool("n", false, "output numeric values")
 var doChar = flag.Bool("c", false, "output characters")
 var doText = flag.Bool("t", false, "output plain text")
-var doDesc = flag.Bool("d", false, "describe the characters from the Unicode database")
+var doDesc = flag.Bool("d", false, "describe the characters from the Unicode database, in simple form")
+var doUnic = flag.Bool("u", false, "describe the characters from the Unicode database, in Unicode form")
 
 var printRange = false
+
+const unicodeTxt = "/usr/local/plan9/lib/unicode.txt"
+const unicodeDataTxt = "/usr/local/plan9/lib/UnicodeData.txt"
 
 func main() {
 	flag.Usage = usage
@@ -29,7 +33,11 @@ func main() {
 		codes = argsAreChars()
 	}
 	if *doDesc {
-		desc(codes)
+		desc(codes, unicodeTxt)
+		return
+	}
+	if *doUnic {
+		desc(codes, unicodeDataTxt)
 		return
 	}
 	if *doText {
@@ -139,8 +147,8 @@ func argsAreNumbers() []rune {
 	return codes
 }
 
-func desc(codes []rune) {
-	text, err := ioutil.ReadFile("/usr/local/plan9/lib/unicode")
+func desc(codes []rune, file string) {
+	text, err := ioutil.ReadFile(file)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(2)
@@ -151,7 +159,7 @@ func desc(codes []rune) {
 		if len(l) == 0 {
 			break
 		}
-		tab := strings.IndexRune(l, '\t')
+		tab := strings.IndexAny(l, "\t;")
 		if tab < 0 {
 			fmt.Fprintf(os.Stderr, "malformed database at line %d\n", i)
 			os.Exit(2)
