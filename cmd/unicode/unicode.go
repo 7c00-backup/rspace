@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -15,6 +16,8 @@ var doChar = flag.Bool("c", false, "output characters")
 var doText = flag.Bool("t", false, "output plain text")
 var doDesc = flag.Bool("d", false, "describe the characters from the Unicode database, in simple form")
 var doUnic = flag.Bool("u", false, "describe the characters from the Unicode database, in Unicode form")
+var doUNIC = flag.Bool("U", false, "describe the characters from the Unicode database, in glorious detail")
+var doGrep = flag.Bool("g", false, "grep for argument string in data")
 
 var printRange = false
 
@@ -27,6 +30,8 @@ func main() {
 	mode()
 	var codes []rune
 	switch {
+	case *doGrep:
+		codes = argsAreRegexps()
 	case *doChar:
 		codes = argsAreNumbers()
 	case *doNum:
@@ -36,7 +41,7 @@ func main() {
 		desc(codes, unicodeTxt)
 		return
 	}
-	if *doUnic {
+	if *doUnic || *doUNIC {
 		desc(codes, unicodeDataTxt)
 		return
 	}
@@ -49,7 +54,7 @@ func main() {
 		switch {
 		case printRange:
 			fmt.Fprintf(b, "%.4x %c", c, c)
-			if i % 4 ==  3 {
+			if i%4 == 3 {
 				fmt.Fprint(b, "\n")
 			} else {
 				fmt.Fprint(b, "\t")
@@ -67,8 +72,9 @@ func main() {
 }
 
 const usageText = `usage: unicode [-c] [-d] [-n] [-t]
--c: input is hex; output characters (xyz)
--n: input is characters; output hex (23 or 23-44)
+-c: args are hex; output characters (xyz)
+-n: args are characters; output hex (23 or 23-44)
+-g: args are regular expressions for matching names
 -d: output textual description
 -t: output plain text, not one char per line
 
@@ -83,6 +89,10 @@ func usage() {
 // Mode determines whether we have numeric or character input.
 // If there are no flags, we sniff the first argument.
 func mode() {
+	// If grepping names, we need an output format defined; default is numeric.
+	if *doGrep && !(*doNum || *doChar || *doDesc || *doUnic || *doUNIC) {
+		*doNum = true
+	}
 	if *doNum || *doChar {
 		return
 	}
@@ -118,6 +128,20 @@ func argsAreChars() []rune {
 	return codes
 }
 
+func argsAreNames() []rune {
+	var codes []rune
+	for i, a := range flag.Args() {
+		for _, r := range a {
+			codes = append(codes, r)
+		}
+		// Add space between arguments if output is plain text.
+		if *doText && i < len(flag.Args())-1 {
+			codes = append(codes, ' ')
+		}
+	}
+	return codes
+}
+
 func parseRune(s string) rune {
 	r, err := strconv.ParseInt(s, 16, 22)
 	if err != nil {
@@ -137,7 +161,7 @@ func argsAreNumbers() []rune {
 			if r2 < r1 {
 				usage()
 			}
-			for  ; r1 <= r2; r1++ {
+			for ; r1 <= r2; r1++ {
 				codes = append(codes, r1)
 			}
 			continue
@@ -147,26 +171,108 @@ func argsAreNumbers() []rune {
 	return codes
 }
 
-func desc(codes []rune, file string) {
+func argsAreRegexps() []rune {
+	var codes []rune
+	lines := getFile(unicodeTxt)
+	for _, a := range flag.Args() {
+		re, err := regexp.Compile(a)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "%s\n", err)
+			os.Exit(2)
+		}
+		for i, line := range lines {
+			if re.MatchString(line) {
+				r, _ := runeOfLine(i, line)
+				codes = append(codes, r)
+			}
+		}
+	}
+	return codes
+}
+
+var files = make(map[string][]string)
+
+func getFile(file string) []string {
+	lines := files[file]
+	if lines != nil {
+		return lines
+	}
 	text, err := ioutil.ReadFile(file)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(2)
 	}
-	lines := strings.Split(string(text), "\n")
+	lines = strings.Split(string(text), "\n")
+	// We get an empty final line; drop it.
+	if len(lines) > 0 && len(lines[len(lines)-1]) == 0 {
+		lines = lines[:len(lines)-1]
+	}
+	files[file] = lines
+	return lines
+}
+
+func runeOfLine(i int, line string) (r rune, tab int) {
+	tab = strings.IndexAny(line, "\t;")
+	if tab < 0 {
+		fmt.Fprintf(os.Stderr, "malformed database: line %d\n", i)
+		os.Exit(2)
+	}
+	return parseRune(line[0:tab]), tab
+}
+
+func desc(codes []rune, file string) {
+	lines := getFile(file)
 	runeData := make(map[rune]string)
 	for i, l := range lines {
-		if len(l) == 0 {
-			break
-		}
-		tab := strings.IndexAny(l, "\t;")
-		if tab < 0 {
-			fmt.Fprintf(os.Stderr, "malformed database at line %d\n", i)
-			os.Exit(2)
-		}
-		runeData[parseRune(l[0:tab])] = l[tab+1:]
+		r, tab := runeOfLine(i, l)
+		runeData[r] = l[tab+1:]
 	}
-	for _, r := range codes {
-		fmt.Printf("%#U %s\n", r, runeData[r])
+	if *doUNIC {
+		for _, r := range codes {
+			fmt.Printf("%#U %s", r, dumpUnicode(runeData[r]))
+		}
+	} else {
+		for _, r := range codes {
+			fmt.Printf("%#U %s\n", r, runeData[r])
+		}
 	}
+}
+
+var prop = [...]string{
+	"",
+	"category: ",
+	"canonical combining classes: ",
+	"bidirectional category: ",
+	"character decomposition mapping: ",
+	"decimal digit value: ",
+	"digit value: ",
+	"numeric value: ",
+	"mirrored: ",
+	"Unicode 1.0 name: ",
+	"10646 comment field: ",
+	"uppercase mapping: ",
+	"lowercase mapping: ",
+	"titlecase mapping: ",
+}
+
+func dumpUnicode(s string) []byte {
+	fields := strings.Split(s, ";")
+	if len(fields) == 0 {
+		return []byte{'\n'}
+	}
+	if len(fields) != len(prop) {
+		fmt.Fprintf(os.Stderr, "expected %d fields, got %d\n", len(prop), len(fields))
+		os.Exit(2)
+	}
+	b := new(bytes.Buffer)
+	for i, f := range fields {
+		if f == "" {
+			continue
+		}
+		if i > 0 {
+			b.WriteByte('\t')
+		}
+		fmt.Fprintf(b, "%s%s\n", prop[i], f)
+	}
+	return b.Bytes()
 }
