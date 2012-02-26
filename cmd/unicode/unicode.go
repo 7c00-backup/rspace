@@ -89,15 +89,15 @@ func usage() {
 // Mode determines whether we have numeric or character input.
 // If there are no flags, we sniff the first argument.
 func mode() {
+	if len(flag.Args()) == 0 {
+		usage()
+	}
 	// If grepping names, we need an output format defined; default is numeric.
 	if *doGrep && !(*doNum || *doChar || *doDesc || *doUnic || *doUNIC) {
 		*doNum = true
 	}
 	if *doNum || *doChar {
 		return
-	}
-	if len(flag.Args()) == 0 {
-		usage()
 	}
 	// If first arg is a range, print chars from hex.
 	if strings.ContainsRune(flag.Arg(0), '-') {
