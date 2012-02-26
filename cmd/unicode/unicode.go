@@ -71,6 +71,11 @@ func main() {
 	fmt.Print(b)
 }
 
+func fatalf(format string, args ...interface{}) {
+	fmt.Fprintf(os.Stderr, format+"\n", args...)
+	os.Exit(2)
+}
+
 const usageText = `usage: unicode [-c] [-d] [-n] [-t]
 -c: args are hex; output characters (xyz)
 -n: args are characters; output hex (23 or 23-44)
@@ -78,12 +83,10 @@ const usageText = `usage: unicode [-c] [-d] [-n] [-t]
 -d: output textual description
 -t: output plain text, not one char per line
 
-Default behavior sniffs the arguments to select -c vs. -n.
-`
+Default behavior sniffs the arguments to select -c vs. -n.`
 
 func usage() {
-	fmt.Fprint(os.Stderr, usageText)
-	os.Exit(2)
+	fatalf(usageText)
 }
 
 // Mode determines whether we have numeric or character input.
@@ -145,8 +148,7 @@ func argsAreNames() []rune {
 func parseRune(s string) rune {
 	r, err := strconv.ParseInt(s, 16, 22)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err)
-		os.Exit(2)
+		fatalf("%s", err)
 	}
 	return rune(r)
 }
@@ -177,8 +179,7 @@ func argsAreRegexps() []rune {
 	for _, a := range flag.Args() {
 		re, err := regexp.Compile(a)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "%s\n", err)
-			os.Exit(2)
+			fatalf("%s", err)
 		}
 		for i, line := range lines {
 			if re.MatchString(line) {
@@ -199,8 +200,7 @@ func getFile(file string) []string {
 	}
 	text, err := ioutil.ReadFile(file)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err)
-		os.Exit(2)
+		fatalf("%s", err)
 	}
 	lines = strings.Split(string(text), "\n")
 	// We get an empty final line; drop it.
@@ -214,8 +214,7 @@ func getFile(file string) []string {
 func runeOfLine(i int, line string) (r rune, tab int) {
 	tab = strings.IndexAny(line, "\t;")
 	if tab < 0 {
-		fmt.Fprintf(os.Stderr, "malformed database: line %d\n", i)
-		os.Exit(2)
+		fatalf("malformed database: line %d", i)
 	}
 	return parseRune(line[0:tab]), tab
 }
@@ -261,8 +260,7 @@ func dumpUnicode(s string) []byte {
 		return []byte{'\n'}
 	}
 	if len(fields) != len(prop) {
-		fmt.Fprintf(os.Stderr, "expected %d fields, got %d\n", len(prop), len(fields))
-		os.Exit(2)
+		fatalf("expected %d fields, got %d", len(prop), len(fields))
 	}
 	b := new(bytes.Buffer)
 	for i, f := range fields {
