@@ -1,0 +1,2 @@
+You will need to follow http://golang.org/doc/contribute.html#Code_review
+to enable the Code Review extension (pointing into your Go root).
