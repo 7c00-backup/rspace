@@ -94,7 +94,7 @@ var html = flag.Bool("html", true, "print slides as HTML not plain text")
 var start = flag.Int("start", 0, "first slide to print")
 
 var funcs = template.FuncMap{
-	"code": code,
+	"code":  code,
 	"image": image,
 }
 
@@ -139,13 +139,13 @@ type Pres struct {
 }
 
 type Slide struct {
-	Number  int
-	Title   string
-	Text    []string
-	Bullets []string
-	Code    []Code
-	Image    []Image
-	BottomText    []string
+	Number     int
+	Title      string
+	Text       []string
+	Bullets    []string
+	Code       []Code
+	Image      []Image
+	BottomText []string
 }
 
 type Code struct {
@@ -266,7 +266,7 @@ func parse(name string) *Pres {
 		for ok && text == "" {
 			text, ok = lines.next()
 		}
-		for ok && (strings.HasPrefix(text, "code ") || strings.HasPrefix(text , "image")) {
+		for ok && (strings.HasPrefix(text, "code ") || strings.HasPrefix(text, "image")) {
 			args := strings.Fields(text)
 			if len(args) < 2 {
 				log.Fatalf("%s:%d bad action invocation syntax %q", name, lines.line, text)
@@ -431,7 +431,7 @@ func multipleLines(file, text string, arg1, arg2 interface{}) string {
 	if !isInt2 {
 		line2 = match(file, line1, lines, pattern2)
 	} else if line2 < line1 {
-		log.Fatalf("lines out of order for %q: %d %d", line1, line2)
+		log.Fatalf("lines out of order for %q %q: %d %d", arg1, arg2, line1, line2)
 	}
 	return strings.Join(lines[line1-1:line2], "")
 }
