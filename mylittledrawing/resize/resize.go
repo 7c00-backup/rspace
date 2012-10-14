@@ -6,7 +6,7 @@ package resize
 
 import (
 	"image"
-	"image/ycbcr"
+	"image/color"
 )
 
 // Resize returns a scaled copy of the image slice r of m.
@@ -16,12 +16,12 @@ func Resize(m image.Image, r image.Rectangle, w, h int) image.Image {
 		return nil
 	}
 	if w == 0 || h == 0 || r.Dx() <= 0 || r.Dy() <= 0 {
-		return image.NewRGBA64(w, h)
+		return image.NewRGBA64(image.Rect(0, 0, w, h))
 	}
 	switch m := m.(type) {
 	case *image.RGBA:
 		return resizeRGBA(m, r, w, h)
-	case *ycbcr.YCbCr:
+	case *image.YCbCr:
 		if m, ok := resizeYCbCr(m, r, w, h); ok {
 			return m
 		}
@@ -98,7 +98,7 @@ func Resize(m image.Image, r image.Rectangle, w, h int) image.Image {
 
 // average converts the sums to averages and returns the result.
 func average(sum []uint64, w, h int, n uint64) image.Image {
-	ret := image.NewRGBA(w, h)
+	ret := image.NewRGBA(image.Rect(0, 0, w, h))
 	for y := 0; y < h; y++ {
 		for x := 0; x < w; x++ {
 			i := y*ret.Stride + x*4
@@ -114,12 +114,12 @@ func average(sum []uint64, w, h int, n uint64) image.Image {
 
 // resizeYCbCr returns a scaled copy of the YCbCr image slice r of m.
 // The returned image has width w and height h.
-func resizeYCbCr(m *ycbcr.YCbCr, r image.Rectangle, w, h int) (image.Image, bool) {
+func resizeYCbCr(m *image.YCbCr, r image.Rectangle, w, h int) (image.Image, bool) {
 	var verticalRes int
 	switch m.SubsampleRatio {
-	case ycbcr.SubsampleRatio420:
+	case image.YCbCrSubsampleRatio420:
 		verticalRes = 2
-	case ycbcr.SubsampleRatio422:
+	case image.YCbCrSubsampleRatio422:
 		verticalRes = 1
 	default:
 		return nil, false
@@ -134,7 +134,7 @@ func resizeYCbCr(m *ycbcr.YCbCr, r image.Rectangle, w, h int) (image.Image, bool
 		Cr := m.Cr[y/verticalRes*m.CStride:]
 		for x := r.Min.X; x < r.Max.X; x++ {
 			// Get the source pixel.
-			r8, g8, b8 := ycbcr.YCbCrToRGB(Y[x], Cb[x/2], Cr[x/2])
+			r8, g8, b8 := color.YCbCrToRGB(Y[x], Cb[x/2], Cr[x/2])
 			r64 := uint64(r8)
 			g64 := uint64(g8)
 			b64 := uint64(b8)
@@ -225,10 +225,10 @@ func Resample(m image.Image, r image.Rectangle, w, h int) image.Image {
 		return nil
 	}
 	if w == 0 || h == 0 || r.Dx() <= 0 || r.Dy() <= 0 {
-		return image.NewRGBA64(w, h)
+		return image.NewRGBA64(image.Rect(0, 0, w, h))
 	}
 	curw, curh := r.Dx(), r.Dy()
-	img := image.NewRGBA(w, h)
+	img := image.NewRGBA(image.Rect(0, 0, w, h))
 	for y := 0; y < h; y++ {
 		for x := 0; x < w; x++ {
 			// Get a source pixel.
@@ -239,7 +239,7 @@ func Resample(m image.Image, r image.Rectangle, w, h int) image.Image {
 			g := uint8(g32 >> 8)
 			b := uint8(b32 >> 8)
 			a := uint8(a32 >> 8)
-			img.SetRGBA(x, y, image.RGBAColor{r, g, b, a})
+			img.SetRGBA(x, y, color.RGBA{R: r, G: g, B: b, A: a})
 		}
 	}
 	return img

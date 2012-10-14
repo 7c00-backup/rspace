@@ -11,19 +11,20 @@ import (
 	"appengine/user"
 	"bytes"
 	"crypto/sha1"
+	"errors"
 	"fmt"
-	"http"
 	"image"
 	"image/jpeg"
+	_ "image/png" // import so we can read PNG files.
 	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"resize"
 	"runtime/debug"
 	"strings"
-	"template"
+	"text/template"
 	"time"
-	_ "image/png" // import so we can read PNG files.
 )
 
 const TESTING = false
@@ -32,22 +33,22 @@ var formatters = template.FuncMap{
 	"time": timeFormatter,
 }
 
-func initTemplateSet() *template.Set {
+func initTemplates() *template.Template {
 	const templateFile = "template.html"
 	bytes, err := ioutil.ReadFile(templateFile)
 	if err != nil {
-		panic("can't read templates: " + err.String())
+		panic("can't read templates: " + err.Error())
 	}
-	set := new(template.Set).Funcs(formatters)
+	set := template.New("mld").Funcs(formatters)
 	_, err = set.Parse(string(bytes))
 	if err != nil {
-		panic("can't parse templates: " + err.String())
+		panic("can't parse templates: " + err.Error())
 	}
 	return set
 }
 
 var (
-	set = initTemplateSet()
+	set = initTemplates()
 )
 
 // Because App Engine owns main and starts the HTTP service,
@@ -68,8 +69,8 @@ func init() {
 // Conversation is the type used to hold the conversations in the datastore.
 type Conversation struct {
 	Title      string
-	CreateTime datastore.Time
-	ModTime    datastore.Time
+	CreateTime time.Time
+	ModTime    time.Time
 	ModUser    string
 	Key        string
 	Elem       []*Elem // always empty in the data store. TODO: don't use this type
@@ -84,7 +85,7 @@ type Elem struct {
 	Text     string
 	ImageKey string
 	ConvKey  string
-	Time     datastore.Time
+	Time     time.Time
 	User     string
 }
 
@@ -142,7 +143,7 @@ func (v *Viewers) Notify(c appengine.Context) {
 	}
 }
 
-func updateViewers(c appengine.Context, convKeyStringID string, f func(*Viewers)) os.Error {
+func updateViewers(c appengine.Context, convKeyStringID string, f func(*Viewers)) error {
 	convKey := datastore.NewKey(c, "Conversation", convKeyStringID, 0, nil)
 	viewersKey := datastore.NewKey(c, "Viewers", "viewers-"+convKeyStringID, 0, convKey)
 	var v Viewers
@@ -165,7 +166,7 @@ func viewerDisconnect(w http.ResponseWriter, r *http.Request) {
 	clientID := r.FormValue("from")
 	keyStringID := strings.Split(clientID, "/")[0]
 	c.Infof("disconnnect from %q key %q", clientID, keyStringID)
-	delViewer := func(c appengine.Context) os.Error {
+	delViewer := func(c appengine.Context) error {
 		return updateViewers(c, keyStringID, func(v *Viewers) {
 			var nClient []string
 			for _, id := range v.Client {
@@ -185,7 +186,7 @@ func viewerDisconnect(w http.ResponseWriter, r *http.Request) {
 
 func execute(w http.ResponseWriter, name, title string, data interface{}) {
 	var b bytes.Buffer
-	err := set.Execute(&b, name, &Executor{title, data})
+	err := set.ExecuteTemplate(&b, name, &Executor{title, data})
 	check(err)
 	b.WriteTo(w)
 }
@@ -194,7 +195,7 @@ func execute(w http.ResponseWriter, name, title string, data interface{}) {
 func root(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 	getUser(c)
-	if r.URL.RawPath != "/" {
+	if r.URL.Path != "/" {
 		http.Error(w, "no such page: "+r.URL.Path, 404)
 		return
 	}
@@ -211,7 +212,7 @@ func root(w http.ResponseWriter, r *http.Request) {
 // Render the list without the surrounding boilerplate.
 func renderList(w io.Writer, conv *Conversation) {
 	var b bytes.Buffer
-	check(set.Execute(&b, "list", conv))
+	check(set.ExecuteTemplate(&b, "list", conv))
 	b.WriteTo(w)
 }
 
@@ -231,7 +232,7 @@ func conversation(w http.ResponseWriter, r *http.Request) {
 	clientID := key.StringID() + "/" + user // TODO: probably want a better name
 	token, err := channel.Create(c, clientID)
 	check(err)
-	addViewer := func(c appengine.Context) os.Error {
+	addViewer := func(c appengine.Context) error {
 		return updateViewers(c, key.StringID(), func(v *Viewers) {
 			v.Client = append(v.Client, clientID)
 		})
@@ -280,7 +281,7 @@ func newConversation(w http.ResponseWriter, r *http.Request) {
 	}
 	conv.Title = title
 	conv.Key = keyString
-	conv.CreateTime = datastore.SecondsToTime(time.Seconds())
+	conv.CreateTime = time.Now()
 	conv.ModTime = conv.CreateTime
 	conv.ModUser = user
 	// Save the conversation under a unique key. To keep it safe, we use the
@@ -316,10 +317,10 @@ func addElem(w http.ResponseWriter, r *http.Request, text string, imageKey strin
 	err := datastore.Get(c, convKey, conv)
 	check(err)
 	// Now store the element.
-	elemKeyString := keyOf(text + imageKey + fmt.Sprint(time.Nanoseconds()))
+	elemKeyString := keyOf(text + imageKey + fmt.Sprint(time.Now()))
 	// use convKey as the parent key to be available as the ancestor data for the query
 	elemKey := datastore.NewKey(c, "Elem", elemKeyString, 0, convKey)
-	modTime := datastore.SecondsToTime(time.Seconds())
+	modTime := time.Now()
 	elem := &Elem{
 		Text:     text,
 		ImageKey: imageKey,
@@ -358,7 +359,7 @@ func upload(w http.ResponseWriter, r *http.Request) {
 
 	f, _, err := r.FormFile("image")
 	if err == http.ErrMissingFile {
-		check(os.NewError("no file specified for upload"))
+		check(errors.New("no file specified for upload"))
 	}
 	check(err)
 	defer f.Close()
@@ -419,7 +420,7 @@ func upload(w http.ResponseWriter, r *http.Request) {
 func keyOf(data string) string {
 	sha := sha1.New()
 	sha.Write([]byte(data))
-	return fmt.Sprintf("%x", string(sha.Sum())[0:16])
+	return fmt.Sprintf("%x", string(sha.Sum(nil))[0:16])
 }
 
 // img is the HTTP handler for displaying images and painting moustaches;
@@ -445,18 +446,16 @@ func img(w http.ResponseWriter, r *http.Request) {
 	jpeg.Encode(w, m, nil)
 }
 
-func timeFormatter(dt datastore.Time) string {
-	now := time.Seconds()
-	then := int64(dt) / 1e6 // datastore times are in microseconds
-	t := time.SecondsToLocalTime(then)
+func timeFormatter(then time.Time) string {
+	now := time.Now()
 	format := "Jan 06 3:04PM"
 	switch {
-	case now-then < 12*3600:
+	case now.Sub(then) < 12*time.Hour:
 		format = "3:04PM"
-	case now-then < 7*24*3600:
+	case now.Sub(then) < 7*24*time.Hour:
 		format = "Mon 3:04PM"
 	}
-	return fmt.Sprintf("@%s", t.Format(format))
+	return fmt.Sprintf("@%s", then.Format(format))
 }
 
 // errorHandler wraps the argument handler with an error-catcher that
@@ -464,7 +463,7 @@ func timeFormatter(dt datastore.Time) string {
 func errorHandler(fn http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
-			if err, ok := recover().(os.Error); ok {
+			if err, ok := recover().(error); ok {
 				w.WriteHeader(http.StatusInternalServerError)
 				execute(w, "error", "Error", err)
 				trace := debug.Stack()
@@ -478,7 +477,7 @@ func errorHandler(fn http.HandlerFunc) http.HandlerFunc {
 }
 
 // check aborts the current execution if err is non-nil.
-func check(err os.Error) {
+func check(err error) {
 	if err != nil {
 		panic(err)
 	}
