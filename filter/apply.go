@@ -78,10 +78,8 @@ func apply(slice, function interface{}, inPlace bool) interface{} {
 		panic("apply: not slice")
 	}
 	fn := reflect.ValueOf(function)
-	if fn.Kind() != reflect.Func {
-		panic("apply: not function")
-	}
-	if fn.Type().NumIn() != 1 || fn.Type().NumOut() != 1 || fn.Type().In(0) != in.Type().Elem() {
+	elemType := in.Type().Elem()
+	if !goodFunc(fn, elemType, nil) {
 		panic("apply: function must be of type func(" + in.Type().Elem().String() + ")  outputElemType")
 	}
 	out := in
@@ -105,6 +103,8 @@ func chooseOrDropInPlace(slice, function interface{}, truth bool) {
 	inp.Elem().SetLen(n)
 }
 
+var boolType = reflect.ValueOf(true).Type()
+
 func chooseOrDrop(slice, function interface{}, inPlace, truth bool) (interface{}, int) {
 	// Special case for strings, very common.
 	if strSlice, ok := slice.([]string); ok {
@@ -126,11 +126,9 @@ func chooseOrDrop(slice, function interface{}, inPlace, truth bool) (interface{}
 		panic("choose/drop: not slice")
 	}
 	fn := reflect.ValueOf(function)
-	if fn.Kind() != reflect.Func {
-		panic("choose/drop: not function")
-	}
-	if fn.Type().NumIn() != 1 || fn.Type().NumOut() != 1 || fn.Type().In(0) != in.Type().Elem() || fn.Type().Out(0).Kind() != reflect.Bool {
-		panic("choose/drop: function must be of type func(" + in.Type().Elem().String() + ") bool")
+	elemType := in.Type().Elem()
+	if !goodFunc(fn, elemType, boolType) {
+		panic("choose/drop: function must be of type func(" + elemType.String() + ") bool")
 	}
 	var which []int
 	var ins [1]reflect.Value // Outside the loop to avoid one allocation.
@@ -148,4 +146,27 @@ func chooseOrDrop(slice, function interface{}, inPlace, truth bool) (interface{}
 		out.Index(i).Set(in.Index(which[i]))
 	}
 	return out.Interface(), len(which)
+}
+
+// goodFunc verifies that the function satisfies the signature, represented as a slice of types.
+// The last type is the single result type; the others are the input types.
+// A final type of nil means any result type is accepted.
+func goodFunc(fn reflect.Value, types ...reflect.Type) bool {
+	if fn.Kind() != reflect.Func {
+		return false
+	}
+	// Last type is return, the rest are ins.
+	if fn.Type().NumIn() != len(types)-1 || fn.Type().NumOut() != 1 {
+		return false
+	}
+	for i := 0; i < len(types)-1; i++ {
+		if fn.Type().In(i) != types[i] {
+			return false
+		}
+	}
+	outType := types[len(types)-1]
+	if outType != nil && fn.Type().Out(0) != outType {
+		return false
+	}
+	return true
 }
