@@ -60,6 +60,19 @@ func DropInPlace(pointerToSlice, function interface{}) {
 }
 
 func apply(slice, function interface{}, inPlace bool) interface{} {
+	// Special case for strings, very common.
+	if strSlice, ok := slice.([]string); ok {
+		if strFn, ok := function.(func(string) string); ok {
+			r := strSlice
+			if !inPlace {
+				r = make([]string, len(strSlice))
+			}
+			for i, s := range strSlice {
+				r[i] = strFn(s)
+			}
+			return r
+		}
+	}
 	in := reflect.ValueOf(slice)
 	if in.Kind() != reflect.Slice {
 		panic("apply: not slice")
@@ -93,6 +106,21 @@ func chooseOrDropInPlace(slice, function interface{}, truth bool) {
 }
 
 func chooseOrDrop(slice, function interface{}, inPlace, truth bool) (interface{}, int) {
+	// Special case for strings, very common.
+	if strSlice, ok := slice.([]string); ok {
+		if strFn, ok := function.(func(string) bool); ok {
+			var r []string
+			if inPlace {
+				r = strSlice[:0]
+			}
+			for _, s := range strSlice {
+				if strFn(s) == truth {
+					r = append(r, s)
+				}
+			}
+			return r, len(r)
+		}
+	}
 	in := reflect.ValueOf(slice)
 	if in.Kind() != reflect.Slice {
 		panic("choose/drop: not slice")
