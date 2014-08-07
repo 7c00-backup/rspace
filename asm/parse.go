@@ -12,14 +12,6 @@ import (
 	"text/scanner"
 
 	"code.google.com/p/rsc/c2go/liblink"
-	"code.google.com/p/rsc/c2go/liblink/amd64" // TODO: configure the architecture
-)
-
-var (
-	instructions     = make(map[string]int)
-	registers        = make(map[string]int)
-	pseudos          = make(map[string]int) // TEXT, DATA etc.
-	unaryDestination = make(map[int]bool)   // Instruction takes one operand and result is a destination.
 )
 
 const (
@@ -28,110 +20,6 @@ const (
 	rSP
 	rPC
 )
-
-func init() {
-	// Create maps for easy lookup of instruction names etc.
-	// TODO: Should this be done in liblink for us?
-	for i, s := range amd64.Regstr {
-		registers[s] = i
-	}
-	// Pseudo-registers.
-	registers["SB"] = rSB
-	registers["FP"] = rFP
-	registers["SP"] = rSP // TODO: is this amd64-only?
-	registers["PC"] = rPC // TODO: is this amd64-only?
-
-	// Annoying aliases. TODO: amd64-specific.
-	instructions["JB"] = amd64.AJCS
-	instructions["JC"] = amd64.AJCS
-	instructions["JNAE"] = amd64.AJCS
-	instructions["JLO"] = amd64.AJCS
-	instructions["JAE"] = amd64.AJCC
-	instructions["JNB"] = amd64.AJCC
-	instructions["JNC"] = amd64.AJCC
-	instructions["JHS"] = amd64.AJCC
-	instructions["JE"] = amd64.AJEQ
-	instructions["JZ"] = amd64.AJEQ
-	instructions["JNZ"] = amd64.AJNE
-	instructions["JBE"] = amd64.AJLS
-	instructions["JNA"] = amd64.AJLS
-	instructions["JA"] = amd64.AJHI
-	instructions["JNBE"] = amd64.AJHI
-	instructions["JS"] = amd64.AJMI
-	instructions["JNS"] = amd64.AJPL
-	instructions["JP"] = amd64.AJPS
-	instructions["JPE"] = amd64.AJPS
-	instructions["JNP"] = amd64.AJPC
-	instructions["JPO"] = amd64.AJPC
-	instructions["JL"] = amd64.AJLT
-	instructions["JNGE"] = amd64.AJLT
-	instructions["JNL"] = amd64.AJGE
-	instructions["JNG"] = amd64.AJLE
-	instructions["JG"] = amd64.AJGT
-	instructions["JNLE"] = amd64.AJGT
-	instructions["MASKMOVDQU"] = amd64.AMASKMOVOU
-	instructions["MOVD"] = amd64.AMOVQ
-	instructions["MOVDQ2Q"] = amd64.AMOVQ
-
-	for i, s := range amd64.Anames6 {
-		instructions[s] = i
-	}
-
-	pseudos["DATA"] = amd64.ADATA
-	pseudos["FUNCDATA"] = amd64.AFUNCDATA
-	pseudos["GLOBL"] = amd64.AGLOBL
-	pseudos["PCDATA"] = amd64.APCDATA
-	pseudos["TEXT"] = amd64.ATEXT
-
-	// These instructions write to prog.To.
-	unaryDestination[amd64.ABSWAPL] = true
-	unaryDestination[amd64.ABSWAPQ] = true
-	unaryDestination[amd64.ACMPXCHG8B] = true
-	unaryDestination[amd64.ADECB] = true
-	unaryDestination[amd64.ADECL] = true
-	unaryDestination[amd64.ADECQ] = true
-	unaryDestination[amd64.ADECW] = true
-	unaryDestination[amd64.AINCB] = true
-	unaryDestination[amd64.AINCL] = true
-	unaryDestination[amd64.AINCQ] = true
-	unaryDestination[amd64.AINCW] = true
-	unaryDestination[amd64.ANEGB] = true
-	unaryDestination[amd64.ANEGL] = true
-	unaryDestination[amd64.ANEGQ] = true
-	unaryDestination[amd64.ANEGW] = true
-	unaryDestination[amd64.ANOTB] = true
-	unaryDestination[amd64.ANOTL] = true
-	unaryDestination[amd64.ANOTQ] = true
-	unaryDestination[amd64.ANOTW] = true
-	unaryDestination[amd64.APOPL] = true
-	unaryDestination[amd64.APOPQ] = true
-	unaryDestination[amd64.APOPW] = true
-	unaryDestination[amd64.ASETCC] = true
-	unaryDestination[amd64.ASETCS] = true
-	unaryDestination[amd64.ASETEQ] = true
-	unaryDestination[amd64.ASETGE] = true
-	unaryDestination[amd64.ASETGT] = true
-	unaryDestination[amd64.ASETHI] = true
-	unaryDestination[amd64.ASETLE] = true
-	unaryDestination[amd64.ASETLS] = true
-	unaryDestination[amd64.ASETLT] = true
-	unaryDestination[amd64.ASETMI] = true
-	unaryDestination[amd64.ASETNE] = true
-	unaryDestination[amd64.ASETOC] = true
-	unaryDestination[amd64.ASETOS] = true
-	unaryDestination[amd64.ASETPC] = true
-	unaryDestination[amd64.ASETPL] = true
-	unaryDestination[amd64.ASETPS] = true
-	unaryDestination[amd64.AFFREE] = true
-	unaryDestination[amd64.AFLDENV] = true
-	unaryDestination[amd64.AFSAVE] = true
-	unaryDestination[amd64.AFSTCW] = true
-	unaryDestination[amd64.AFSTENV] = true
-	unaryDestination[amd64.AFSTSW] = true
-	unaryDestination[amd64.AFXSAVE] = true
-	unaryDestination[amd64.AFXSAVE64] = true
-	unaryDestination[amd64.ASTMXCSR] = true
-}
 
 type Parser struct {
 	lex           TokenReader
@@ -145,7 +33,7 @@ type Parser struct {
 	labels        map[string]*liblink.Prog
 	toPatch       []Patch
 	addr          []Addr //[]liblink.Addr
-	arch          *liblink.LinkArch
+	arch          *Arch
 	linkCtxt      *liblink.Link
 	firstProg     *liblink.Prog
 	lastProg      *liblink.Prog
@@ -156,7 +44,7 @@ type Patch struct {
 	label string
 }
 
-func NewParser(ctxt *liblink.Link, arch *liblink.LinkArch, lex TokenReader) *Parser {
+func NewParser(ctxt *liblink.Link, arch *Arch, lex TokenReader) *Parser {
 	return &Parser{
 		linkCtxt: ctxt,
 		arch:     arch,
@@ -246,12 +134,12 @@ func (p *Parser) line() bool {
 			p.errorf("missing operand")
 		}
 	}
-	i := pseudos[word]
+	i := p.arch.pseudos[word]
 	if i != 0 {
 		p.pseudo(i, word, operands)
 		return true
 	}
-	i = instructions[word]
+	i = p.arch.instructions[word]
 	if i != 0 {
 		p.instruction(i, word, operands)
 		return true
@@ -275,15 +163,15 @@ func (p *Parser) instruction(op int, word string, operands [][]LexToken) {
 
 func (p *Parser) pseudo(op int, word string, operands [][]LexToken) {
 	switch op {
-	case amd64.ATEXT:
+	case p.arch.ATEXT:
 		p.asmText(word, operands)
-	case amd64.ADATA:
+	case p.arch.ADATA:
 		p.asmData(word, operands)
-	case amd64.AGLOBL:
+	case p.arch.AGLOBL:
 		p.asmGlobl(word, operands)
-	case amd64.APCDATA:
+	case p.arch.APCDATA:
 		p.asmPCData(word, operands)
-	case amd64.AFUNCDATA:
+	case p.arch.AFUNCDATA:
 		p.asmFuncData(word, operands)
 	default:
 		p.errorf("unimplemented: %s", word)
@@ -299,8 +187,6 @@ func (p *Parser) start(operand []LexToken) {
 func (p *Parser) address(operand []LexToken) Addr {
 	p.start(operand)
 	addr := Addr{}
-	// addr.Typ = p.arch.D_NONE
-	// addr.Index = p.arch.D_NONE
 	p.operand(&addr)
 	return addr
 }
@@ -313,7 +199,7 @@ func (p *Parser) parenRegister(a *Addr) bool {
 	if tok.Token != scanner.Ident {
 		p.errorf("expected register, got %s", tok.text)
 	}
-	r, present := registers[tok.text]
+	r, present := p.arch.registers[tok.text]
 	if !present {
 		p.errorf("expected register, found %s", tok.text)
 	}
@@ -387,7 +273,7 @@ func (p *Parser) operand(a *Addr) bool {
 	case '*':
 		p.next()
 		tok := p.next()
-		r, present := registers[tok.text]
+		r, present := p.arch.registers[tok.text]
 		if !present {
 			p.errorf("expected register; got %s", tok.text)
 		}
@@ -417,7 +303,7 @@ func (p *Parser) operand(a *Addr) bool {
 	case scanner.Ident:
 		tok := p.next()
 		// Either R or (most general) ident<>+4(SB)(R*scale).
-		if r, present := registers[tok.text]; present {
+		if r, present := p.arch.registers[tok.text]; present {
 			a.hasRegister = true
 			a.register = r
 			// Possibly register pair: DX:AX.
@@ -425,7 +311,7 @@ func (p *Parser) operand(a *Addr) bool {
 				p.next()
 				tok = p.get(scanner.Ident)
 				a.hasRegister2 = true
-				a.register2 = registers[tok.text]
+				a.register2 = p.arch.registers[tok.text]
 			}
 			break
 		}

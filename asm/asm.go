@@ -9,7 +9,6 @@ import (
 	"text/scanner"
 
 	"code.google.com/p/rsc/c2go/liblink"
-	"code.google.com/p/rsc/c2go/liblink/amd64"
 )
 
 type Addr struct {
@@ -121,18 +120,18 @@ func (a *Addr) is(mask int) bool {
 func (p *Parser) symbolType(a *Addr) int {
 	switch a.register {
 	case rFP:
-		return amd64.D_PARAM
+		return p.arch.D_PARAM
 	case rSP:
-		return amd64.D_AUTO
+		return p.arch.D_AUTO
 	case rSB:
 		// See comment in addrToAddr.
 		if a.isImmediateAddress {
-			return amd64.D_ADDR
+			return p.arch.D_ADDR
 		}
 		if a.isStatic {
-			return amd64.D_STATIC
+			return p.arch.D_STATIC
 		}
-		return amd64.D_EXTERN
+		return p.arch.D_EXTERN
 	}
 	p.errorf("invalid register for symbol %s", a.symbol)
 	return 0
@@ -140,13 +139,8 @@ func (p *Parser) symbolType(a *Addr) int {
 
 // TODO: configure the architecture
 
-var noAddr = liblink.Addr{
-	Typ:   amd64.D_NONE,
-	Index: amd64.D_NONE,
-}
-
 func (p *Parser) addrToAddr(a *Addr) liblink.Addr {
-	out := noAddr
+	out := p.arch.noAddr
 	if a.has(addrSymbol) {
 		// How to encode the symbols:
 		// syntax = Typ,Index
@@ -162,9 +156,9 @@ func (p *Parser) addrToAddr(a *Addr) liblink.Addr {
 			switch a.register {
 			case rSB:
 				if a.isStatic {
-					out.Index = amd64.D_STATIC
+					out.Index = p.arch.D_STATIC
 				} else {
-					out.Index = amd64.D_EXTERN
+					out.Index = p.arch.D_EXTERN
 				}
 			default:
 				p.errorf("can't handle immediate address of %s not (SB)\n", a.symbol)
@@ -177,10 +171,10 @@ func (p *Parser) addrToAddr(a *Addr) liblink.Addr {
 		// x+4(SP) = D_AUTO with sym=x TODO
 		out.Typ = a.register
 		if a.register == rSP {
-			out.Typ = amd64.D_SP
+			out.Typ = p.arch.SP
 		}
 		if a.isIndirect {
-			out.Typ += amd64.D_INDIR
+			out.Typ += p.arch.D_INDIR
 		}
 		// a.register2 handled in the instruction method; it's bizarre.
 	}
@@ -194,23 +188,23 @@ func (p *Parser) addrToAddr(a *Addr) liblink.Addr {
 		out.Offset = a.offset
 		if a.is(addrOffset) {
 			// RHS of MOVL $0xf1, 0xf1  // crash
-			out.Typ = amd64.D_INDIR + amd64.D_NONE
-		} else if a.isImmediateConstant && out.Typ == amd64.D_NONE {
-			out.Typ = amd64.D_CONST
+			out.Typ = p.arch.D_INDIR + p.arch.D_NONE
+		} else if a.isImmediateConstant && out.Typ == p.arch.D_NONE {
+			out.Typ = p.arch.D_CONST
 		}
 	}
 	if a.has(addrFloat) {
 		out.U.Dval = a.float
-		out.Typ = amd64.D_FCONST
+		out.Typ = p.arch.D_FCONST
 	}
 	if a.has(addrString) {
 		out.U.Sval = a.string
-		out.Typ = amd64.D_SCONST
+		out.Typ = p.arch.D_SCONST
 	}
 	// HACK TODO
 	if a.isIndirect && !a.has(addrRegister) && a.has(addrIndex) {
 		// LHS of LEAQ	0(BX*8), CX
-		out.Typ = amd64.D_INDIR + amd64.D_NONE
+		out.Typ = p.arch.D_INDIR + p.arch.D_NONE
 	}
 	return out
 }
@@ -285,17 +279,17 @@ func (p *Parser) asmText(word string, operands [][]LexToken) {
 
 	prog := &liblink.Prog{
 		Ctxt:   p.linkCtxt,
-		As:     amd64.ATEXT,
+		As:     p.arch.ATEXT,
 		Lineno: p.lineNum,
 		From: liblink.Addr{
 			Typ:   p.symbolType(&nameAddr),
-			Index: amd64.D_NONE,
+			Index: p.arch.D_NONE,
 			Sym:   liblink.Linklookup(p.linkCtxt, name, 0),
 			Scale: flag,
 		},
 		To: liblink.Addr{
-			Typ:    amd64.D_CONST,
-			Index:  amd64.D_NONE,
+			Typ:    p.arch.D_CONST,
+			Index:  p.arch.D_NONE,
 			Offset: (locals << 32) | args,
 		},
 	}
@@ -332,11 +326,11 @@ func (p *Parser) asmData(word string, operands [][]LexToken) {
 
 	prog := &liblink.Prog{
 		Ctxt:   p.linkCtxt,
-		As:     amd64.ADATA,
+		As:     p.arch.ADATA,
 		Lineno: p.lineNum,
 		From: liblink.Addr{
 			Typ:    p.symbolType(&nameAddr),
-			Index:  amd64.D_NONE,
+			Index:  p.arch.D_NONE,
 			Sym:    liblink.Linklookup(p.linkCtxt, name, 0),
 			Offset: nameAddr.offset,
 			Scale:  scale,
@@ -383,18 +377,18 @@ func (p *Parser) asmGlobl(word string, operands [][]LexToken) {
 	// log.Printf("GLOBL %s %d, $%d", name, scale, size)
 	prog := &liblink.Prog{
 		Ctxt:   p.linkCtxt,
-		As:     amd64.AGLOBL,
+		As:     p.arch.AGLOBL,
 		Lineno: p.lineNum,
 		From: liblink.Addr{
 			Typ:    p.symbolType(&nameAddr),
-			Index:  amd64.D_NONE,
+			Index:  p.arch.D_NONE,
 			Sym:    liblink.Linklookup(p.linkCtxt, name, 0),
 			Offset: nameAddr.offset,
 			Scale:  scale,
 		},
 		To: liblink.Addr{
-			Typ:    amd64.D_CONST,
-			Index:  amd64.D_NONE,
+			Typ:    p.arch.D_CONST,
+			Index:  p.arch.D_NONE,
 			Offset: size,
 		},
 	}
@@ -425,16 +419,16 @@ func (p *Parser) asmPCData(word string, operands [][]LexToken) {
 	// log.Printf("PCDATA $%d, $%d", value0, value1)
 	prog := &liblink.Prog{
 		Ctxt:   p.linkCtxt,
-		As:     amd64.APCDATA,
+		As:     p.arch.APCDATA,
 		Lineno: p.lineNum,
 		From: liblink.Addr{
-			Typ:    amd64.D_CONST,
-			Index:  amd64.D_NONE,
+			Typ:    p.arch.D_CONST,
+			Index:  p.arch.D_NONE,
 			Offset: value0,
 		},
 		To: liblink.Addr{
-			Typ:    amd64.D_CONST,
-			Index:  amd64.D_NONE,
+			Typ:    p.arch.D_CONST,
+			Index:  p.arch.D_NONE,
 			Offset: value1,
 		},
 	}
@@ -466,16 +460,16 @@ func (p *Parser) asmFuncData(word string, operands [][]LexToken) {
 	// log.Printf("FUNCDATA %s, $%d", name, value)
 	prog := &liblink.Prog{
 		Ctxt:   p.linkCtxt,
-		As:     amd64.AFUNCDATA,
+		As:     p.arch.AFUNCDATA,
 		Lineno: p.lineNum,
 		From: liblink.Addr{
-			Typ:    amd64.D_CONST,
-			Index:  amd64.D_NONE,
+			Typ:    p.arch.D_CONST,
+			Index:  p.arch.D_NONE,
 			Offset: value,
 		},
 		To: liblink.Addr{
 			Typ:   p.symbolType(&nameAddr),
-			Index: amd64.D_NONE,
+			Index: p.arch.D_NONE,
 			Sym:   liblink.Linklookup(p.linkCtxt, name, 0),
 		},
 	}
@@ -503,7 +497,7 @@ func (p *Parser) asmJump(op int, addr []Addr) {
 		Lineno: p.lineNum,
 		Ctxt:   p.linkCtxt,
 		As:     op,
-		From:   noAddr,
+		From:   p.arch.noAddr,
 	}
 	switch {
 	case target.is(addrRegister):
@@ -521,8 +515,8 @@ func (p *Parser) asmJump(op int, addr []Addr) {
 		// JMP 4(AX)
 		if target.register == rPC {
 			prog.To = liblink.Addr{
-				Typ:    amd64.D_BRANCH,
-				Index:  amd64.D_NONE,
+				Typ:    p.arch.D_BRANCH,
+				Index:  p.arch.D_NONE,
 				Offset: p.pc + 1 + target.offset, // +1 because p.pc is incremented in link, below.
 			}
 		} else {
@@ -534,9 +528,9 @@ func (p *Parser) asmJump(op int, addr []Addr) {
 			p.errorf("jmp to symbol must be SB-relative")
 		}
 		prog.To = liblink.Addr{
-			Typ:    amd64.D_BRANCH,
+			Typ:    p.arch.D_BRANCH,
 			Sym:    liblink.Linklookup(p.linkCtxt, target.symbol, 0),
-			Index:  amd64.D_NONE,
+			Index:  p.arch.D_NONE,
 			Offset: target.offset,
 		}
 	default:
@@ -558,8 +552,8 @@ func (p *Parser) patch() {
 
 func (p *Parser) branch(jmp, target *liblink.Prog) {
 	jmp.To = liblink.Addr{
-		Typ:   amd64.D_BRANCH,
-		Index: amd64.D_NONE,
+		Typ:   p.arch.D_BRANCH,
+		Index: p.arch.D_NONE,
 	}
 	jmp.To.U.Branch = target
 }
@@ -574,15 +568,15 @@ func (p *Parser) asmInstruction(op int, addr []Addr) {
 	}
 	switch len(addr) {
 	case 0:
-		prog.From = noAddr
-		prog.To = noAddr
+		prog.From = p.arch.noAddr
+		prog.To = p.arch.noAddr
 	case 1:
-		if unaryDestination[op] {
-			prog.From = noAddr
+		if p.arch.unaryDestination[op] {
+			prog.From = p.arch.noAddr
 			prog.To = p.addrToAddr(&addr[0])
 		} else {
 			prog.From = p.addrToAddr(&addr[0])
-			prog.To = noAddr
+			prog.To = p.arch.noAddr
 		}
 	case 2:
 		prog.From = p.addrToAddr(&addr[0])
@@ -591,7 +585,7 @@ func (p *Parser) asmInstruction(op int, addr []Addr) {
 		// Bizarrely, to liblink it's specified by setting index on the LHS.
 		// TODO: can we fix this?
 		if addr[1].has(addrRegister2) {
-			if prog.From.Index != amd64.D_NONE {
+			if prog.From.Index != p.arch.D_NONE {
 				p.errorf("register pair operand on RHS must have register on LHS")
 			}
 			prog.From.Index = addr[1].register2

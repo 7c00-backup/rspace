@@ -64,8 +64,8 @@ func NewLexer(name string, ctxt *liblink.Link, dFlag, iFlag multiFlag) TokenRead
 	if err != nil {
 		log.Fatalf("asm: %s\n", err)
 	}
-	input.Push(NewTokenizer(name, fd))
 	linkCtxt = ctxt
+	input.Push(NewTokenizer(name, fd))
 	return input
 }
 
@@ -145,6 +145,7 @@ func NewTokenizer(name string, r io.Reader) *Tokenizer {
 		scanner.ScanComments
 	s.Position.Filename = name
 	s.IsIdentRune = isIdentRune
+	liblink.Linklinehist(linkCtxt, histline, name, 0)
 	return &Tokenizer{
 		s:        &s,
 		line:     1,
@@ -255,8 +256,8 @@ func (s *Stack) Next() Token {
 	for tok == scanner.EOF && len(s.tr) > 1 {
 		// Pop the topmost item from the stack and resume with the next one down.
 		// TODO: close file descriptor.
-		//fmt.Println("POP")
-		//liblink.Linklinehist(linkCtxt, histline, "XXXXXXX", 0) // TODO: what to do here?
+		fmt.Println("POP")
+		liblink.Linklinehist(linkCtxt, histline, "XXXXXXX", 0) // TODO: what to do here?
 		s.tr = s.tr[:len(s.tr)-1]
 		tok = s.Next()
 	}

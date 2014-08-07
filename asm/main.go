@@ -14,7 +14,6 @@ import (
 	"strings"
 
 	"code.google.com/p/rsc/c2go/liblink"
-	"code.google.com/p/rsc/c2go/liblink/amd64"
 )
 
 var (
@@ -38,22 +37,7 @@ func main() {
 		flag.Usage()
 	}
 
-	// TODO: Is this how to set this up?
-	var arch *liblink.LinkArch
-	switch build.Default.GOARCH {
-	case "amd64":
-		arch = &amd64.Linkamd64
-	/*
-		case "amd64p32":
-			arch = &amd64.Linkamd64p32
-		case "386":
-			arch = &x86.Link386
-		case "arm":
-			arch = &arm.Linkarm
-	*/
-	default:
-		log.Fatal("unrecognized architecture %s", liblink.Getgoarch())
-	}
+	arch := setArch(build.Default.GOARCH)
 
 	// Flag refinement.
 	if *outputFile == "" {
@@ -69,7 +53,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	ctxt := liblink.Linknew(arch)
+	ctxt := liblink.Linknew(arch.LinkArch)
 	if *printOut {
 		ctxt.Debugasm = 1
 	}
