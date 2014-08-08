@@ -9,14 +9,14 @@ import (
 
 	"code.google.com/p/rsc/c2go/liblink"
 	"code.google.com/p/rsc/c2go/liblink/amd64"
+	"code.google.com/p/rsc/c2go/liblink/x86"
 )
-
-// TODO: configure the architecture
 
 // Arch wraps the link architecture object with more architecture-specific information
 type Arch struct {
 	*liblink.LinkArch
 	D_INDIR          int // TODO: why not in LinkArch?
+	D_CONST2         int // TODO: why not in LinkArch?
 	SP               int
 	noAddr           liblink.Addr
 	instructions     map[string]int
@@ -28,19 +28,130 @@ type Arch struct {
 func setArch(GOARCH string) *Arch {
 	// TODO: Is this how to set this up?
 	switch GOARCH {
+	case "386":
+		return arch386()
 	case "amd64":
 		return archAmd64()
-		/*
-			case "amd64p32":
-				arch = &amd64.Linkamd64p32
-			case "386":
-				arch = &x86.Link386
-			case "arm":
-				arch = &arm.Linkarm
-		*/
 	}
 	log.Fatalf("unrecognized architecture %s", GOARCH)
 	return nil
+}
+
+func arch386() *Arch {
+	noAddr := liblink.Addr{
+		Typ:   x86.D_NONE,
+		Index: x86.D_NONE,
+	}
+
+	registers := make(map[string]int)
+	// Create maps for easy lookup of instruction names etc.
+	// TODO: Should this be done in liblink for us?
+	for i, s := range x86.Regstr {
+		registers[s] = i
+	}
+	// Pseudo-registers.
+	registers["SB"] = rSB
+	registers["FP"] = rFP
+	registers["SP"] = rSP
+	registers["PC"] = rPC
+
+	instructions := make(map[string]int)
+	for i, s := range x86.Anames8 {
+		instructions[s] = i
+	}
+	// Annoying aliases.
+	instructions["JA"] = x86.AJHI
+	instructions["JAE"] = x86.AJCC
+	instructions["JB"] = x86.AJCS
+	instructions["JBE"] = x86.AJLS
+	instructions["JC"] = x86.AJCS
+	instructions["JE"] = x86.AJEQ
+	instructions["JG"] = x86.AJGT
+	instructions["JHS"] = x86.AJCC
+	instructions["JL"] = x86.AJLT
+	instructions["JLO"] = x86.AJCS
+	instructions["JNA"] = x86.AJLS
+	instructions["JNAE"] = x86.AJCS
+	instructions["JNB"] = x86.AJCC
+	instructions["JNBE"] = x86.AJHI
+	instructions["JNC"] = x86.AJCC
+	instructions["JNG"] = x86.AJLE
+	instructions["JNGE"] = x86.AJLT
+	instructions["JNL"] = x86.AJGE
+	instructions["JNLE"] = x86.AJGT
+	instructions["JNO"] = x86.AJOC
+	instructions["JNP"] = x86.AJPC
+	instructions["JNS"] = x86.AJPL
+	instructions["JNZ"] = x86.AJNE
+	instructions["JO"] = x86.AJOS
+	instructions["JP"] = x86.AJPS
+	instructions["JPE"] = x86.AJPS
+	instructions["JPO"] = x86.AJPC
+	instructions["JS"] = x86.AJMI
+	instructions["JZ"] = x86.AJEQ
+	instructions["MASKMOVDQU"] = x86.AMASKMOVOU
+	instructions["MOVOA"] = x86.AMOVO
+	instructions["MOVNTDQ"] = x86.AMOVNTO
+
+	pseudos := make(map[string]int) // TEXT, DATA etc.
+	pseudos["DATA"] = x86.ADATA
+	pseudos["FUNCDATA"] = x86.AFUNCDATA
+	pseudos["GLOBL"] = x86.AGLOBL
+	pseudos["PCDATA"] = x86.APCDATA
+	pseudos["TEXT"] = x86.ATEXT
+
+	unaryDestination := make(map[int]bool) // Instruction takes one operand and result is a destination.
+	// These instructions write to prog.To.
+	unaryDestination[x86.ABSWAPL] = true
+	unaryDestination[x86.ACMPXCHG8B] = true
+	unaryDestination[x86.ADECB] = true
+	unaryDestination[x86.ADECL] = true
+	unaryDestination[x86.ADECW] = true
+	unaryDestination[x86.AINCB] = true
+	unaryDestination[x86.AINCL] = true
+	unaryDestination[x86.AINCW] = true
+	unaryDestination[x86.ANEGB] = true
+	unaryDestination[x86.ANEGL] = true
+	unaryDestination[x86.ANEGW] = true
+	unaryDestination[x86.ANOTB] = true
+	unaryDestination[x86.ANOTL] = true
+	unaryDestination[x86.ANOTW] = true
+	unaryDestination[x86.APOPL] = true
+	unaryDestination[x86.APOPW] = true
+	unaryDestination[x86.ASETCC] = true
+	unaryDestination[x86.ASETCS] = true
+	unaryDestination[x86.ASETEQ] = true
+	unaryDestination[x86.ASETGE] = true
+	unaryDestination[x86.ASETGT] = true
+	unaryDestination[x86.ASETHI] = true
+	unaryDestination[x86.ASETLE] = true
+	unaryDestination[x86.ASETLS] = true
+	unaryDestination[x86.ASETLT] = true
+	unaryDestination[x86.ASETMI] = true
+	unaryDestination[x86.ASETNE] = true
+	unaryDestination[x86.ASETOC] = true
+	unaryDestination[x86.ASETOS] = true
+	unaryDestination[x86.ASETPC] = true
+	unaryDestination[x86.ASETPL] = true
+	unaryDestination[x86.ASETPS] = true
+	unaryDestination[x86.AFFREE] = true
+	unaryDestination[x86.AFLDENV] = true
+	unaryDestination[x86.AFSAVE] = true
+	unaryDestination[x86.AFSTCW] = true
+	unaryDestination[x86.AFSTENV] = true
+	unaryDestination[x86.AFSTSW] = true
+
+	return &Arch{
+		LinkArch:         &x86.Link386,
+		D_INDIR:          x86.D_INDIR,
+		D_CONST2:         x86.D_CONST2,
+		SP:               x86.D_SP,
+		noAddr:           noAddr,
+		instructions:     instructions,
+		registers:        registers,
+		pseudos:          pseudos,
+		unaryDestination: unaryDestination,
+	}
 }
 
 func archAmd64() *Arch {
@@ -58,14 +169,14 @@ func archAmd64() *Arch {
 	// Pseudo-registers.
 	registers["SB"] = rSB
 	registers["FP"] = rFP
-	registers["SP"] = rSP // TODO: is this amd64-only?
-	registers["PC"] = rPC // TODO: is this amd64-only?
+	registers["SP"] = rSP
+	registers["PC"] = rPC
 
 	instructions := make(map[string]int)
 	for i, s := range amd64.Anames6 {
 		instructions[s] = i
 	}
-	// Annoying aliases. TODO: amd64-specific.
+	// Annoying aliases.
 	instructions["JB"] = amd64.AJCS
 	instructions["JC"] = amd64.AJCS
 	instructions["JNAE"] = amd64.AJCS
@@ -157,6 +268,7 @@ func archAmd64() *Arch {
 	return &Arch{
 		LinkArch:         &amd64.Linkamd64,
 		D_INDIR:          amd64.D_INDIR,
+		D_CONST2:         amd64.D_NONE,
 		SP:               amd64.D_SP,
 		noAddr:           noAddr,
 		instructions:     instructions,

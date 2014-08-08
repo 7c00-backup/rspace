@@ -5,6 +5,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 	"text/scanner"
 
@@ -227,7 +228,7 @@ func (p *Parser) link(prog *liblink.Prog, doLabel bool) {
 		p.pendingLabels = p.pendingLabels[0:0]
 	}
 	prog.Pc = int64(p.pc)
-	// fmt.Println(p.lineNum, prog)
+	fmt.Println(p.lineNum, prog)
 }
 
 // asmText assembles a TEXT pseudo-op.
@@ -288,10 +289,20 @@ func (p *Parser) asmText(word string, operands [][]LexToken) {
 			Scale: flag,
 		},
 		To: liblink.Addr{
-			Typ:    p.arch.D_CONST,
-			Index:  p.arch.D_NONE,
-			Offset: (locals << 32) | args,
+			Index: p.arch.D_NONE,
 		},
+	}
+	// Encoding of arg and locals depends on architecture.
+	switch p.arch.Thechar {
+	case '6':
+		prog.To.Typ = p.arch.D_CONST
+		prog.To.Offset = (locals << 32) | args
+	case '8':
+		prog.To.Typ = p.arch.D_CONST2
+		prog.To.Offset = args
+		prog.To.Offset2 = int(locals)
+	default:
+		p.errorf("internal error: can't encode TEXT arg/frame")
 	}
 	p.link(prog, true)
 }
