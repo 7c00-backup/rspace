@@ -37,6 +37,7 @@ type Parser struct {
 	linkCtxt      *liblink.Link
 	firstProg     *liblink.Prog
 	lastProg      *liblink.Prog
+	dataAddr      map[string]int64 // Most recent address for DATA for this symbol.
 }
 
 type Patch struct {
@@ -50,6 +51,7 @@ func NewParser(ctxt *liblink.Link, arch *Arch, lex TokenReader) *Parser {
 		arch:     arch,
 		lex:      lex,
 		labels:   make(map[string]*liblink.Prog),
+		dataAddr: make(map[string]int64),
 	}
 }
 

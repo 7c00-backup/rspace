@@ -335,6 +335,12 @@ func (p *Parser) asmData(word string, operands [][]LexToken) {
 		p.errorf("DATA value must be an immediate constant or address")
 	}
 
+	// The addresses must not overlap. Easiest test: require monotonicity.
+	if lastAddr, ok := p.dataAddr[name]; ok && nameAddr.offset < lastAddr {
+		p.errorf("overlapping DATA entry for %s", nameAddr.symbol)
+	}
+	p.dataAddr[name] = nameAddr.offset + int64(scale)
+
 	prog := &liblink.Prog{
 		Ctxt:   p.linkCtxt,
 		As:     p.arch.ADATA,
@@ -348,6 +354,7 @@ func (p *Parser) asmData(word string, operands [][]LexToken) {
 		},
 		To: p.addrToAddr(&valueAddr),
 	}
+
 	p.link(prog, false)
 }
 
